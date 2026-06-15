@@ -9,21 +9,21 @@
            CSS DESIGN SYSTEM — Custom Properties & Reset
            ================================================================ */
         :root {
-            --bg-primary: #08081a;
-            --bg-secondary: #0f0f28;
-            --bg-card: rgba(255,255,255,0.025);
-            --bg-card-hover: rgba(255,255,255,0.045);
-            --bg-input: rgba(255,255,255,0.04);
-            --border-subtle: rgba(255,255,255,0.06);
-            --border-card: rgba(255,255,255,0.08);
-            --border-active: rgba(99,102,241,0.35);
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --accent: #6366f1;
-            --accent-glow: rgba(99,102,241,0.25);
-            --accent2: #22d3ee;
-            --accent2-glow: rgba(34,211,238,0.2);
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: rgba(255,255,255,0.03);
+            --bg-card-hover: rgba(255,255,255,0.06);
+            --bg-input: rgba(255,255,255,0.05);
+            --border-subtle: rgba(255,255,255,0.08);
+            --border-card: rgba(255,255,255,0.1);
+            --border-active: rgba(0,229,255,0.45);
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #888888;
+            --accent: #00e5ff;
+            --accent-glow: rgba(0,229,255,0.3);
+            --accent2: #00e5ff;
+            --accent2-glow: rgba(0,229,255,0.25);
             --success: #10b981;
             --success-glow: rgba(16,185,129,0.2);
             --warning: #f59e0b;
@@ -66,9 +66,9 @@
             width: 200%;
             height: 200%;
             background:
-                radial-gradient(ellipse at 30% 0%, rgba(99,102,241,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 70% 0%, rgba(34,211,238,0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.04) 0%, transparent 50%);
+                radial-gradient(ellipse at 30% 0%, rgba(0,229,255,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 0%, rgba(0,229,255,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(0,229,255,0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
@@ -131,9 +131,9 @@
             position: absolute;
             inset: -4px;
             border-radius: 28px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            opacity: 0.3;
-            filter: blur(16px);
+            background: var(--accent);
+            opacity: 0.4;
+            filter: blur(18px);
             z-index: -1;
             animation: pulse-glow 2s ease-in-out infinite;
         }
@@ -145,7 +145,7 @@
             font-weight: 800;
             letter-spacing: -0.02em;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 40%, var(--accent2) 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #00e5ff 40%, #00e5ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -180,7 +180,7 @@
         .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
         .hero-badge .dot.green { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
         .hero-badge .dot.blue { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
-        .hero-badge .dot.cyan { background: var(--accent2); box-shadow: 0 0 6px var(--accent2-glow); }
+        .hero-badge .dot.cyan { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
 
         /* Connection status */
         .conn-status {
@@ -225,12 +225,12 @@
             justify-content: space-between;
             gap: 12px;
             padding: 12px 18px;
-            background: rgba(99,102,241,0.08);
-            border: 1px solid rgba(99,102,241,0.2);
+            background: rgba(0,229,255,0.06);
+            border: 1px solid rgba(0,229,255,0.2);
             border-radius: var(--radius-md);
             margin-bottom: 12px;
             font-size: 13px;
-            color: var(--accent2);
+            color: var(--accent);
             backdrop-filter: blur(8px);
         }
         .restore-banner.visible { display: flex; }
@@ -327,10 +327,10 @@
         .pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
 
         .pill.selected {
-            background: rgba(99,102,241,0.15);
+            background: rgba(0,229,255,0.1);
             border-color: var(--accent);
-            color: #a5b4fc;
-            box-shadow: 0 0 12px rgba(99,102,241,0.15);
+            color: var(--accent);
+            box-shadow: 0 0 14px rgba(0,229,255,0.2);
         }
 
         /* Chip checkboxes */
@@ -359,9 +359,9 @@
         .chip input[type="checkbox"] { display: none; }
 
         .chip:has(input:checked) {
-            background: rgba(99,102,241,0.12);
+            background: rgba(0,229,255,0.1);
             border-color: var(--accent);
-            color: #c7d2fe;
+            color: var(--accent);
         }
         .chip:has(input:disabled) { opacity: 0.35; cursor: not-allowed; }
         .chip:has(input:disabled):hover { border-color: var(--border-card); }
@@ -402,7 +402,7 @@
         }
         .input-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+            box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
         }
         .input-field::placeholder { color: var(--text-muted); }
 
@@ -427,7 +427,7 @@
         }
         .select-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+            box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
         }
 
         .inline-row {
@@ -469,14 +469,15 @@
         .btn:active { transform: scale(0.97); }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #7c3aed);
-            color: #fff;
-            box-shadow: 0 2px 12px rgba(99,102,241,0.3);
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 2px 16px rgba(0,229,255,0.35);
+            font-weight: 700;
         }
-        .btn-primary:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.45); transform: translateY(-1px); }
+        .btn-primary:hover { box-shadow: 0 4px 24px rgba(0,229,255,0.5); transform: translateY(-1px); }
         .btn-primary:disabled {
-            background: rgba(99,102,241,0.3);
-            color: rgba(255,255,255,0.4);
+            background: rgba(0,229,255,0.2);
+            color: rgba(0,0,0,0.4);
             box-shadow: none;
             cursor: not-allowed;
             transform: none;
@@ -531,9 +532,9 @@
         }
         .btn-sort:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
         .btn-sort.active {
-            background: rgba(99,102,241,0.12);
+            background: rgba(0,229,255,0.1);
             border-color: var(--accent);
-            color: #c7d2fe;
+            color: var(--accent);
         }
 
         .btn-actions {
@@ -798,8 +799,8 @@
         .domain-tld-badge {
             display: inline-block;
             padding: 2px 8px;
-            background: rgba(99,102,241,0.12);
-            color: #a5b4fc;
+            background: rgba(0,229,255,0.1);
+            color: var(--accent);
             border-radius: 4px;
             font-size: 11px;
             font-weight: 600;
@@ -884,14 +885,14 @@
             gap: 8px;
             padding: 10px 16px;
             font-size: 13px;
-            color: var(--accent2);
+            color: var(--accent);
         }
         .scanning-indicator.visible { display: flex; }
 
         .pulse-dot {
             width: 8px; height: 8px;
             border-radius: 50%;
-            background: var(--accent2);
+            background: var(--accent);
             animation: pulse 1.2s ease-in-out infinite;
         }
 
@@ -1081,7 +1082,7 @@
         <header class="hero">
             <div class="hero-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="url(#hero-grad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <defs><linearGradient id="hero-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#22d3ee"/></linearGradient></defs>
+                    <defs><linearGradient id="hero-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#00e5ff"/></linearGradient></defs>
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="2" y1="12" x2="22" y2="12"/>
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
@@ -1222,8 +1223,8 @@
                     <svg class="progress-ring" viewBox="0 0 120 120" width="120" height="120">
                         <defs>
                             <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#6366f1"/>
-                                <stop offset="100%" stop-color="#22d3ee"/>
+                                <stop offset="0%" stop-color="#00e5ff"/>
+                                <stop offset="100%" stop-color="#00e5ff"/>
                             </linearGradient>
                         </defs>
                         <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
@@ -1245,7 +1246,7 @@
                         <div class="stat-label">已检测</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="stat-whois" style="color:#a5b4fc;">0</div>
+                        <div class="stat-value" id="stat-whois" style="color:#00e5ff;">0</div>
                         <div class="stat-label">📡 Whois 查询</div>
                     </div>
                     <div class="stat-card highlight" id="stat-found-card">
@@ -1316,8 +1317,8 @@
     <svg width="0" height="0" style="position:absolute">
         <defs>
             <linearGradient id="g-accent" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#6366f1"/>
-                <stop offset="100%" stop-color="#7c3aed"/>
+                <stop offset="0%" stop-color="#00e5ff"/>
+                <stop offset="100%" stop-color="#00e5ff"/>
             </linearGradient>
         </defs>
     </svg>
@@ -1978,7 +1979,7 @@
         // ================================================================
         function spawnConfetti(count = 40) {
             const container = $('confetti-container');
-            const colors = ['#6366f1', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#a78bfa', '#f472b6', '#38bdf8'];
+            const colors = ['#00e5ff', '#10b981', '#f59e0b', '#ef4444', '#ff6bcb', '#38bdf8', '#a78bfa', '#f472b6'];
 
             for (let i = 0; i < count; i++) {
                 const piece = document.createElement('div');
