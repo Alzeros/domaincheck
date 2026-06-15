@@ -19,3 +19,11 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+
+# Environment & secrets
+.env
+.env.*
+
+# Logs
+*.log
+nohup.out
