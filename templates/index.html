@@ -1794,9 +1794,6 @@
                     <button class="btn-icon" title="复制" onclick="event.stopPropagation();copyDomain('${domain}', this)">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
-                    <a class="btn-icon" href="http://${domain}" target="_blank" title="打开" onclick="event.stopPropagation();">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    </a>
                 </div>
             `;
             $('results-grid').appendChild(card);
@@ -1854,9 +1851,6 @@
                         <button class="btn-icon" title="复制" onclick="event.stopPropagation();copyDomain('${domain}', this)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         </button>
-                        <a class="btn-icon" href="http://${domain}" target="_blank" title="打开" onclick="event.stopPropagation();">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        </a>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -1935,8 +1929,20 @@
         // ================================================================
         async function copyDomain(domain, btn) {
             try {
-                await navigator.clipboard.writeText(domain);
-                // Brief feedback on the button
+                // Try clipboard API first (needs HTTPS/localhost)
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(domain);
+                } else {
+                    // Fallback for HTTP: create temp textarea
+                    const ta = document.createElement('textarea');
+                    ta.value = domain;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                }
                 const origHTML = btn.innerHTML;
                 btn.innerHTML = '<span style="color:#10b981;font-size:16px;">✓</span>';
                 setTimeout(() => { btn.innerHTML = origHTML; }, 1200);
@@ -1954,7 +1960,19 @@
                 return;
             }
             try {
-                await navigator.clipboard.writeText(visibleDomains.join('\n'));
+                const text = visibleDomains.join('\n');
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                }
                 showToast('success', `已复制 ${visibleDomains.length} 个域名`, 2500);
             } catch (err) {
                 showToast('error', '复制失败');
