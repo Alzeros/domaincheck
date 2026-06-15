@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DomainChecker — 短域名注册检测</title>
+    <style>
+        /* ================================================================
+           CSS DESIGN SYSTEM — Custom Properties & Reset
+           ================================================================ */
+        :root {
+            --bg-primary: #08081a;
+            --bg-secondary: #0f0f28;
+            --bg-card: rgba(255,255,255,0.025);
+            --bg-card-hover: rgba(255,255,255,0.045);
+            --bg-input: rgba(255,255,255,0.04);
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-card: rgba(255,255,255,0.08);
+            --border-active: rgba(99,102,241,0.35);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #6366f1;
+            --accent-glow: rgba(99,102,241,0.25);
+            --accent2: #22d3ee;
+            --accent2-glow: rgba(34,211,238,0.2);
+            --success: #10b981;
+            --success-glow: rgba(16,185,129,0.2);
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+            --shadow-glow: 0 0 20px var(--accent-glow);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+            --transition-fast: 150ms ease;
+            --transition: 250ms ease;
+            --transition-slow: 400ms cubic-bezier(0.4,0,0.2,1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Background effects */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 30% 0%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 0%, rgba(34,211,238,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Grid pattern overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        /* ================================================================
+           LAYOUT
+           ================================================================ */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ================================================================
+           HERO SECTION
+           ================================================================ */
+        .hero {
+            text-align: center;
+            padding: 48px 20px 32px;
+            position: relative;
+        }
+
+        .hero-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(34,211,238,0.1));
+            border: 1px solid var(--border-active);
+            border-radius: var(--radius-xl);
+            margin-bottom: 20px;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .hero-icon::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            opacity: 0.3;
+            filter: blur(16px);
+            z-index: -1;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .hero-icon svg { width: 36px; height: 36px; }
+
+        .hero h1 {
+            font-size: clamp(28px, 5vw, 40px);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 40%, var(--accent2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-tagline {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            backdrop-filter: blur(8px);
+        }
+
+        .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .hero-badge .dot.green { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
+        .hero-badge .dot.blue { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+        .hero-badge .dot.cyan { background: var(--accent2); box-shadow: 0 0 6px var(--accent2-glow); }
+
+        /* Connection status */
+        .conn-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+        .conn-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: background var(--transition);
+        }
+        .conn-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
+        .conn-dot.reconnecting { background: var(--warning); box-shadow: 0 0 6px rgba(245,158,11,0.3); animation: pulse 1s infinite; }
+        .conn-dot.disconnected { background: var(--error); }
+
+        /* ================================================================
+           CARDS
+           ================================================================ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .card:hover { border-color: rgba(255,255,255,0.12); }
+
+        /* ================================================================
+           RESTORE BANNER
+           ================================================================ */
+        .restore-banner {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 18px;
+            background: rgba(99,102,241,0.08);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--accent2);
+            backdrop-filter: blur(8px);
+        }
+        .restore-banner.visible { display: flex; }
+        .restore-banner .close-banner {
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.5;
+            transition: opacity var(--transition-fast);
+            background: none; border: none; color: inherit;
+        }
+        .restore-banner .close-banner:hover { opacity: 1; }
+
+        /* ================================================================
+           TAB BAR
+           ================================================================ */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            transition: all var(--transition);
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab:hover { color: var(--text-secondary); }
+
+        .tab.active {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.04);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab .tab-icon { font-size: 18px; }
+        .tab .tab-label { font-weight: 600; font-size: 14px; }
+        .tab .tab-desc { font-size: 11px; color: var(--text-muted); }
+
+        /* ================================================================
+           FORM ELEMENTS
+           ================================================================ */
+        .form-section { margin-bottom: 16px; }
+        .form-section:last-child { margin-bottom: 0; }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        /* TLD Pills */
+        .pill-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 8px 16px;
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-secondary);
+            background: var(--bg-input);
+            transition: all var(--transition-fast);
+            user-select: none;
+            font-family: var(--font-mono);
+        }
+
+        .pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
+
+        .pill.selected {
+            background: rgba(99,102,241,0.15);
+            border-color: var(--accent);
+            color: #a5b4fc;
+            box-shadow: 0 0 12px rgba(99,102,241,0.15);
+        }
+
+        /* Chip checkboxes */
+        .chip-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            background: var(--bg-input);
+            transition: all var(--transition-fast);
+            user-select: none;
+        }
+
+        .chip:hover { border-color: rgba(255,255,255,0.2); }
+        .chip input[type="checkbox"] { display: none; }
+
+        .chip:has(input:checked) {
+            background: rgba(99,102,241,0.12);
+            border-color: var(--accent);
+            color: #c7d2fe;
+        }
+        .chip:has(input:disabled) { opacity: 0.35; cursor: not-allowed; }
+        .chip:has(input:disabled):hover { border-color: var(--border-card); }
+
+        .chip-check {
+            width: 16px; height: 16px;
+            border: 2px solid var(--text-muted);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+        .chip:has(input:checked) .chip-check {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .chip:has(input:checked) .chip-check::after {
+            content: '✓';
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        /* Text input */
+        .input-field {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: var(--font-mono);
+            outline: none;
+            transition: all var(--transition-fast);
+        }
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+        .input-field::placeholder { color: var(--text-muted); }
+
+        /* Select */
+        .select-field {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: var(--font-sans);
+            outline: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+        .select-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+
+        .inline-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .inline-row .form-group { flex: 1; min-width: 120px; }
+
+        .word-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ================================================================
+           BUTTONS
+           ================================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(99,102,241,0.3);
+        }
+        .btn-primary:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.45); transform: translateY(-1px); }
+        .btn-primary:disabled {
+            background: rgba(99,102,241,0.3);
+            color: rgba(255,255,255,0.4);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: rgba(239,68,68,0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239,68,68,0.25);
+        }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-card);
+        }
+        .btn-ghost:hover { background: var(--bg-input); color: var(--text-primary); }
+
+        .btn-icon {
+            width: 36px; height: 36px;
+            padding: 0;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: 1px solid var(--border-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+        .btn-icon:hover { background: var(--bg-input); color: var(--text-primary); border-color: rgba(255,255,255,0.15); }
+        .btn-icon svg { width: 16px; height: 16px; }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-sort {
+            padding: 5px 12px;
+            font-size: 12px;
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: var(--font-sans);
+            transition: all var(--transition-fast);
+        }
+        .btn-sort:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+        .btn-sort.active {
+            background: rgba(99,102,241,0.12);
+            border-color: var(--accent);
+            color: #c7d2fe;
+        }
+
+        .btn-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        /* ================================================================
+           PROGRESS SECTION
+           ================================================================ */
+        .progress-section { display: none; }
+        .progress-section.visible { display: block; }
+
+        .progress-top {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        /* SVG Ring */
+        .progress-ring-wrap {
+            position: relative;
+            width: 120px; height: 120px;
+            flex-shrink: 0;
+        }
+
+        .progress-ring { transform: rotate(-90deg); }
+
+        .progress-ring-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.06);
+            stroke-width: 6;
+        }
+
+        .progress-ring-fill {
+            fill: none;
+            stroke: url(#ring-grad);
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.4s ease;
+        }
+
+        .progress-ring-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .progress-ring-text .pct { font-size: 28px; font-weight: 800; color: var(--text-primary); }
+        .progress-ring-text .sub  { font-size: 11px; color: var(--text-muted); }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 14px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            transition: all var(--transition);
+        }
+        .stat-card.highlight {
+            border-color: rgba(16,185,129,0.2);
+            background: rgba(16,185,129,0.05);
+        }
+        .stat-card.highlight.has-results {
+            border-color: rgba(16,185,129,0.4);
+            box-shadow: 0 0 16px rgba(16,185,129,0.1);
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            transition: all var(--transition);
+        }
+        .stat-card.highlight .stat-value { color: var(--success); }
+        .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* Speed / ETA */
+        .speed-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .speed-bar span { display: flex; align-items: center; gap: 4px; }
+
+        /* Linear progress */
+        .progress-bar-bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+            position: relative;
+        }
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* ================================================================
+           RESULTS SECTION
+           ================================================================ */
+        .results-area { display: none; }
+        .results-area.visible { display: block; }
+
+        .results-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .results-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .results-header-left h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .results-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px; height: 24px;
+            padding: 0 8px;
+            background: rgba(16,185,129,0.15);
+            color: var(--success);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        .results-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Search */
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .search-box input {
+            width: 180px;
+            padding: 7px 32px 7px 32px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: all var(--transition-fast);
+        }
+        .search-box input:focus { border-color: var(--accent); width: 220px; }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .search-box .search-icon {
+            position: absolute;
+            left: 10px;
+            color: var(--text-muted);
+            pointer-events: none;
+            font-size: 13px;
+        }
+        .search-clear {
+            position: absolute;
+            right: 6px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 4px;
+            display: none;
+        }
+        .search-clear.visible { display: block; }
+
+        .sort-group { display: flex; gap: 4px; }
+
+        /* Domain Cards Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .domain-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            transition: all var(--transition);
+            animation: slideInUp 0.4s ease both;
+        }
+        .domain-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.12);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .domain-card-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .domain-name {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .domain-tld-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(99,102,241,0.12);
+            color: #a5b4fc;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            flex-shrink: 0;
+        }
+
+        .domain-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .domain-length {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .domain-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .domain-status.available {
+            background: rgba(16,185,129,0.12);
+            color: #6ee7b7;
+        }
+        .domain-status.just-found {
+            background: rgba(34,211,238,0.12);
+            color: #67e8f9;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .domain-card-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        .domain-card-actions .btn-icon {
+            width: 30px; height: 30px;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        .domain-card:hover .domain-card-actions .btn-icon { opacity: 1; }
+
+        /* ================================================================
+           EMPTY STATE
+           ================================================================ */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            display: none;
+        }
+        .empty-state.visible { display: block; }
+
+        .empty-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+        .empty-state h3 {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .empty-state p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Scanning indicator */
+        .scanning-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--accent2);
+        }
+        .scanning-indicator.visible { display: flex; }
+
+        .pulse-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent2);
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           TOAST SYSTEM
+           ================================================================ */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 400px;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(16px);
+            animation: slideInRight 0.3s ease;
+            font-size: 13px;
+            position: relative;
+            overflow: hidden;
+        }
+        .toast.removing { animation: slideOutRight 0.25s ease forwards; }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+        }
+        .toast-success::before { background: var(--success); }
+        .toast-error::before   { background: var(--error); }
+        .toast-warning::before { background: var(--warning); }
+        .toast-info::before    { background: var(--accent); }
+
+        .toast-icon { font-size: 16px; flex-shrink: 0; }
+        .toast-message { flex: 1; color: var(--text-primary); }
+        .toast-close {
+            background: none; border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px;
+            flex-shrink: 0;
+        }
+        .toast-close:hover { color: var(--text-primary); }
+
+        .toast-timer {
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 2px;
+            background: rgba(255,255,255,0.15);
+            animation: toast-timer 4s linear forwards;
+        }
+        .toast-success .toast-timer { background: rgba(16,185,129,0.4); }
+        .toast-error .toast-timer   { background: rgba(239,68,68,0.4); }
+        .toast-warning .toast-timer { background: rgba(245,158,11,0.4); }
+        .toast-info .toast-timer    { background: rgba(99,102,241,0.4); }
+
+        /* ================================================================
+           CONFETTI
+           ================================================================ */
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            overflow: hidden;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px; height: 10px;
+            border-radius: 2px;
+            animation: confetti-fall 2.5s ease-out forwards;
+        }
+
+        /* ================================================================
+           ANIMATIONS
+           ================================================================ */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100%); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to   { opacity: 0; transform: translateX(100%); }
+        }
+
+        @keyframes toast-timer {
+            from { width: 100%; }
+            to   { width: 0%; }
+        }
+
+        @keyframes confetti-fall {
+            0%   { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translateY(105vh) rotate(720deg) scale(0.3); opacity: 0; }
+        }
+
+        @keyframes bounce-in {
+            0%   { transform: scale(0.3); opacity: 0; }
+            50%  { transform: scale(1.05); }
+            70%  { transform: scale(0.95); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ================================================================
+           UTILITY
+           ================================================================ */
+        .hidden { display: none !important; }
+
+        /* ================================================================
+           RESPONSIVE
+           ================================================================ */
+        @media (max-width: 768px) {
+            .hero { padding: 32px 16px 24px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .progress-top { flex-direction: column; align-items: center; }
+            .results-grid { grid-template-columns: 1fr; max-height: 400px; }
+            .results-toolbar { flex-direction: column; align-items: stretch; }
+            .results-header-right { justify-content: space-between; }
+            .search-box { flex: 1; }
+            .search-box input { width: 100%; }
+            .search-box input:focus { width: 100%; }
+            .tab { padding: 10px 12px; }
+            .tab .tab-desc { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 12px 10px 40px; }
+            .card { padding: 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+            .stat-card { padding: 10px 6px; }
+            .stat-value { font-size: 18px; }
+            .domain-card { flex-wrap: wrap; gap: 8px; }
+            .domain-card-actions .btn-icon { opacity: 1; }
+            .btn { padding: 8px 16px; font-size: 13px; }
+            .pill { padding: 6px 12px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Confetti Container -->
+    <div class="confetti-container" id="confetti-container"></div>
+
+    <div class="container">
+        <!-- ====== HERO ====== -->
+        <header class="hero">
+            <div class="hero-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="url(#hero-grad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <defs><linearGradient id="hero-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#22d3ee"/></linearGradient></defs>
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+            </div>
+            <h1>DomainChecker</h1>
+            <p class="hero-tagline">发现可注册的短域名，实时检测 · 多级验证</p>
+            <div class="hero-badges">
+                <span class="hero-badge"><span class="dot green"></span> 11 个 TLD</span>
+                <span class="hero-badge"><span class="dot blue"></span> DNS + RDAP + Whois</span>
+                <span class="hero-badge"><span class="dot cyan"></span> 实时 SSE 推送</span>
+            </div>
+            <div class="conn-status" id="conn-status">
+                <span class="conn-dot" id="conn-dot"></span>
+                <span id="conn-text">就绪</span>
+            </div>
+        </header>
+
+        <!-- ====== RESTORE BANNER ====== -->
+        <div class="restore-banner" id="restore-banner">
+            <span id="restore-text"></span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span id="restore-action"></span>
+                <button class="close-banner" onclick="dismissRestore()">✕</button>
+            </div>
+        </div>
+
+        <!-- ====== CONFIG CARD ====== -->
+        <div class="card" id="config-card">
+            <!-- Tab Bar -->
+            <div class="tab-bar" id="tab-bar">
+                <button class="tab active" data-mode="brute" onclick="setMode('brute')">
+                    <span class="tab-icon">🔢</span>
+                    <span class="tab-label">暴力扫描</span>
+                    <span class="tab-desc">全部字母组合</span>
+                </button>
+                <button class="tab" data-mode="prefix" onclick="setMode('prefix')">
+                    <span class="tab-icon">✨</span>
+                    <span class="tab-label">前缀 + 单词</span>
+                    <span class="tab-desc">智能单词组合</span>
+                </button>
+            </div>
+
+            <!-- TLD Pills (shared) -->
+            <div class="form-section">
+                <span class="form-label">顶级域 (TLD)</span>
+                <div class="pill-grid" id="tld-pills">
+                    <span class="pill selected" data-tld="de">.de</span>
+                    <span class="pill" data-tld="com">.com</span>
+                    <span class="pill" data-tld="io">.io</span>
+                    <span class="pill" data-tld="xyz">.xyz</span>
+                    <span class="pill" data-tld="org">.org</span>
+                    <span class="pill" data-tld="net">.net</span>
+                    <span class="pill" data-tld="cn">.cn</span>
+                    <span class="pill" data-tld="cc">.cc</span>
+                    <span class="pill" data-tld="top">.top</span>
+                    <span class="pill" data-tld="vip">.vip</span>
+                    <span class="pill" data-tld="me">.me</span>
+                </div>
+                <select id="tld" class="hidden">
+                    <option value="de" selected>.de</option>
+                    <option value="com">.com</option>
+                    <option value="io">.io</option>
+                    <option value="xyz">.xyz</option>
+                    <option value="org">.org</option>
+                    <option value="net">.net</option>
+                    <option value="cn">.cn</option>
+                    <option value="cc">.cc</option>
+                    <option value="top">.top</option>
+                    <option value="vip">.vip</option>
+                    <option value="me">.me</option>
+                </select>
+            </div>
+
+            <!-- Brute-force config -->
+            <div id="config-brute">
+                <div class="form-section">
+                    <span class="form-label">域名长度</span>
+                    <div class="chip-group" id="length-chips">
+                        <label class="chip"><input type="checkbox" value="1"><span class="chip-check"></span>1 字母</label>
+                        <label class="chip"><input type="checkbox" value="2" checked><span class="chip-check"></span>2 字母</label>
+                        <label class="chip"><input type="checkbox" value="3" checked><span class="chip-check"></span>3 字母</label>
+                        <label class="chip"><input type="checkbox" value="4" disabled><span class="chip-check"></span>4 字母 🚧</label>
+                        <label class="chip"><input type="checkbox" value="5" disabled><span class="chip-check"></span>5 字母 🚧</label>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <span class="form-label">字符选项</span>
+                    <div class="chip-group">
+                        <label class="chip"><input type="checkbox" id="use-digits"><span class="chip-check"></span>含数字 0-9</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prefix+Word config -->
+            <div id="config-prefix" class="hidden">
+                <div class="inline-row">
+                    <div class="form-group" style="flex:0 0 100px;">
+                        <span class="form-label">前缀字母</span>
+                        <input type="text" id="prefix" value="x" maxlength="2" class="input-field" style="text-align:center;font-size:18px;font-weight:700;width:80px;">
+                    </div>
+                    <div class="form-group" style="flex:0 0 160px;">
+                        <span class="form-label">单词长度</span>
+                        <select id="word-length" class="select-field">
+                            <option value="3">3 字母单词</option>
+                            <option value="4">4 字母单词</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:0 0 140px;">
+                        <span class="form-label">筛选</span>
+                        <div class="chip-group">
+                            <label class="chip"><input type="checkbox" id="only-common" checked><span class="chip-check"></span>仅常用词</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="word-info">
+                    <span id="word-count-info">📖 加载词表中...</span>
+                </div>
+            </div>
+
+            <div class="btn-actions">
+                <button class="btn btn-primary" id="btn-start" onclick="startScan()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                    开始扫描
+                </button>
+                <button class="btn btn-danger hidden" id="btn-cancel" onclick="cancelScan()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                    停止
+                </button>
+            </div>
+        </div>
+
+        <!-- ====== PROGRESS CARD ====== -->
+        <div class="card progress-section" id="progress-section">
+            <div class="progress-top">
+                <!-- SVG Ring -->
+                <div class="progress-ring-wrap">
+                    <svg class="progress-ring" viewBox="0 0 120 120" width="120" height="120">
+                        <defs>
+                            <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#6366f1"/>
+                                <stop offset="100%" stop-color="#22d3ee"/>
+                            </linearGradient>
+                        </defs>
+                        <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+                        <circle class="progress-ring-fill" cx="60" cy="60" r="52"
+                                id="progress-ring-fill"
+                                stroke-dasharray="326.73"
+                                stroke-dashoffset="326.73"/>
+                    </svg>
+                    <div class="progress-ring-text">
+                        <span class="pct" id="progress-pct-large">0%</span>
+                        <span class="sub">完成</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-checked">0</div>
+                        <div class="stat-label">已检测</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-whois" style="color:#a5b4fc;">0</div>
+                        <div class="stat-label">📡 Whois 查询</div>
+                    </div>
+                    <div class="stat-card highlight" id="stat-found-card">
+                        <div class="stat-value" id="stat-found">0</div>
+                        <div class="stat-label">✅ 可注册</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-elapsed">0s</div>
+                        <div class="stat-label">⏱ 耗时</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speed / ETA -->
+            <div class="speed-bar">
+                <span id="speed-info">⏳ 准备中...</span>
+                <span id="eta-info"></span>
+            </div>
+
+            <!-- Linear bar -->
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <!-- ====== RESULTS CARD ====== -->
+        <div class="card results-area" id="results-area">
+            <div class="results-toolbar">
+                <div class="results-header-left">
+                    <h2>扫描结果</h2>
+                    <span class="results-badge" id="results-count">0</span>
+                </div>
+                <div class="results-header-right">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="results-filter" placeholder="过滤域名..." oninput="filterResults()">
+                        <button class="search-clear" id="filter-clear" onclick="clearFilter()">✕</button>
+                    </div>
+                    <div class="sort-group">
+                        <button class="btn-sort active" data-sort="default" onclick="setSort('default', this)">默认</button>
+                        <button class="btn-sort" data-sort="name" onclick="setSort('name', this)">A-Z</button>
+                        <button class="btn-sort" data-sort="length" onclick="setSort('length', this)">长度</button>
+                    </div>
+                    <button class="btn-icon" id="btn-copy-all" title="复制全部域名" onclick="copyAllDomains()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <button class="btn-icon" id="btn-export" title="导出为文本文件" onclick="exportResults()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="scanning-indicator" id="scanning-hint">
+                <span class="pulse-dot"></span> 扫描进行中，找到的域名会实时显示...
+            </div>
+
+            <div class="empty-state visible" id="results-empty">
+                <div class="empty-icon">🔍</div>
+                <h3>还没有找到域名</h3>
+                <p>启动一次扫描来发现可注册的短域名</p>
+            </div>
+
+            <div class="results-grid" id="results-grid"></div>
+        </div>
+    </div>
+
+    <!-- ====== SVG Gradient defs (hidden) ====== -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="g-accent" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#6366f1"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <script>
+        // ================================================================
+        // STATE
+        // ================================================================
+        let currentScanId = null;
+        let eventSource = null;
+        let foundDomains = [];
+        let scanningActive = false;
+        let currentMode = 'brute';
+        let currentSort = 'default';
+        let scanStartTime = null;
+        let lastChecked = 0;
+        let lastCheckTime = 0;
+        let totalDomains = 0;
+
+        // ================================================================
+        // DOM REFS
+        // ================================================================
+        const $ = id => document.getElementById(id);
+
+        // ================================================================
+        // TOAST SYSTEM
+        // ================================================================
+        function showToast(type, message, duration = 4000) {
+            const container = $('toast-container');
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || ''}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close" onclick="this.closest('.toast').remove()">✕</button>
+                <div class="toast-timer"></div>
+            `;
+            container.appendChild(toast);
+
+            const remove = () => {
+                if (toast.parentElement) {
+                    toast.classList.add('removing');
+                    setTimeout(() => toast.remove(), 250);
+                }
+            };
+
+            const timer = setTimeout(remove, duration);
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                clearTimeout(timer);
+                remove();
+            });
+        }
+
+        // ================================================================
+        // MODE SWITCHING
+        // ================================================================
+        function setMode(mode) {
+            currentMode = mode;
+            $('config-brute').classList.toggle('hidden', mode !== 'brute');
+            $('config-prefix').classList.toggle('hidden', mode !== 'prefix');
+
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.mode === mode);
+            });
+        }
+
+        // ================================================================
+        // TLD PILLS
+        // ================================================================
+        document.getElementById('tld-pills').addEventListener('click', (e) => {
+            const pill = e.target.closest('.pill');
+            if (!pill) return;
+            document.querySelectorAll('#tld-pills .pill').forEach(p => p.classList.remove('selected'));
+            pill.classList.add('selected');
+            $('tld').value = pill.dataset.tld;
+        });
+
+        // ================================================================
+        // INIT
+        // ================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            restoreLastResults();
+            restoreLastResultsFromServer();
+            checkActiveScan();
+            loadWordMeta();
+            setMode('brute');
+
+            // Focus prefix input on Enter
+            $('prefix').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !scanningActive) startScan();
+            });
+        });
+
+        // ================================================================
+        // WORD META
+        // ================================================================
+        async function loadWordMeta() {
+            try {
+                const resp = await fetch('/words-meta');
+                const data = await resp.json();
+                const updateInfo = () => {
+                    const len = $('word-length').value;
+                    const onlyCommon = $('only-common').checked;
+                    const info = data[len] || { total: 0, common_count: 0 };
+                    const count = onlyCommon ? info.common_count : info.total;
+                    $('word-count-info').textContent =
+                        `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名`;
+                };
+                updateInfo();
+                $('word-length').addEventListener('change', updateInfo);
+                $('only-common').addEventListener('change', updateInfo);
+            } catch (e) {
+                $('word-count-info').textContent = '⚠️ 无法加载词表';
+            }
+        }
+
+        // ================================================================
+        // RESTORE FROM LOCALSTORAGE
+        // ================================================================
+        function restoreLastResults() {
+            try {
+                const saved = localStorage.getItem('domain_checker_last_results');
+                if (!saved) return;
+                const data = JSON.parse(saved);
+                const elapsed = Date.now() - data.timestamp;
+                if (elapsed > 3600_000) return;
+
+                const tld = data.tld || '';
+                const count = data.domains ? data.domains.length : 0;
+                const timeStr = new Date(data.timestamp).toLocaleTimeString('zh-CN');
+
+                $('restore-text').textContent =
+                    `📋 上次扫描 (.${tld}) 在 ${timeStr} 完成，找到 ${count} 个可注册域名`;
+                $('restore-banner').classList.add('visible');
+
+                if (data.domains && data.domains.length > 0) {
+                    renderAllResults(data.domains, false);
+                    $('results-count').textContent = `${data.domains.length}`;
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        function dismissRestore() {
+            $('restore-banner').classList.remove('visible');
+        }
+
+        // ================================================================
+        // CHECK ACTIVE SCAN (reconnection)
+        // ================================================================
+        async function checkActiveScan() {
+            try {
+                const resp = await fetch('/scan/active');
+                const data = await resp.json();
+                if (!data.scan_id) return;
+
+                $('restore-text').textContent =
+                    `🔴 扫描进行中 (.${data.tld})：已检测 ${data.checked}/${data.total}（${data.pct}%），耗时 ${data.elapsed}s`;
+                $('restore-banner').classList.add('visible');
+
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primary btn-sm';
+                btn.textContent = '继续查看';
+                btn.onclick = reconnectScan;
+                $('restore-action').appendChild(btn);
+
+                currentScanId = data.scan_id;
+            } catch (e) { /* ignore */ }
+        }
+
+        async function reconnectScan() {
+            if (!currentScanId) return;
+            dismissRestore();
+
+            foundDomains = [];
+            $('results-grid').innerHTML = '';
+
+            $('progress-section').classList.add('visible');
+            $('results-area').classList.add('visible');
+            $('results-empty').classList.remove('visible');
+            $('scanning-hint').classList.add('visible');
+            $('btn-start').disabled = true;
+            $('btn-start').innerHTML = '⏳ 扫描中...';
+            $('btn-cancel').classList.remove('hidden');
+
+            const resp = await fetch(`/scan/results/${currentScanId}`);
+            const state = await resp.json();
+            if (state.available && state.available.length > 0) {
+                for (const d of state.available) addFoundDomain(d);
+            }
+
+            const total = state.total || 0;
+            connectSSE(currentScanId, total);
+        }
+
+        // ================================================================
+        // RESTORE FROM SERVER
+        // ================================================================
+        async function restoreLastResultsFromServer() {
+            try {
+                if ($('restore-banner').classList.contains('visible')) return;
+
+                const resp = await fetch('/scan/last');
+                const data = await resp.json();
+                if (!data.domains || data.domains.length === 0) return;
+
+                const elapsed = Date.now() - (data.timestamp * 1000 || 0);
+                if (elapsed > 3600_000) return;
+
+                const count = data.domains.length;
+                const timeStr = new Date(data.timestamp * 1000).toLocaleTimeString('zh-CN');
+
+                $('restore-text').textContent =
+                    `📋 上次扫描 (.${data.tld}) 在 ${timeStr} 完成，找到 ${count} 个可注册域名`;
+                $('restore-banner').classList.add('visible');
+
+                renderAllResults(data.domains, false);
+                $('results-count').textContent = `${data.domains.length}`;
+            } catch (e) { /* ignore */ }
+        }
+
+        // ================================================================
+        // CONFIG
+        // ================================================================
+        function getConfig() {
+            const tld = $('tld').value;
+
+            if (currentMode === 'prefix') {
+                const prefix = $('prefix').value.trim().toLowerCase();
+                const wordLength = parseInt($('word-length').value);
+                const onlyCommon = $('only-common').checked;
+                if (!prefix) {
+                    showToast('warning', '请输入前缀字母');
+                    return null;
+                }
+                return { mode: 'prefix_word', tld, prefix, word_length: wordLength, only_common: onlyCommon };
+            }
+
+            const lengths = Array.from(
+                document.querySelectorAll('#config-brute input[type="checkbox"][value]:checked')
+            ).map(cb => parseInt(cb.value)).filter(v => !isNaN(v)).sort();
+            const useDigits = $('use-digits').checked;
+            return { mode: 'brute', tld, lengths, use_digits: useDigits };
+        }
+
+        function validateConfig(cfg) {
+            if (cfg.mode === 'brute' && (!cfg.lengths || cfg.lengths.length === 0)) {
+                showToast('warning', '请至少选择一个域名长度');
+                return false;
+            }
+            return true;
+        }
+
+        // ================================================================
+        // START SCAN
+        // ================================================================
+        async function startScan() {
+            const cfg = getConfig();
+            if (!cfg || !validateConfig(cfg)) return;
+
+            if (eventSource) { eventSource.close(); eventSource = null; }
+
+            foundDomains = [];
+            scanningActive = true;
+            currentSort = 'default';
+            dismissRestore();
+
+            // Reset UI
+            $('btn-start').disabled = true;
+            $('btn-start').innerHTML = '⏳ 扫描中...';
+            $('btn-cancel').classList.remove('hidden');
+            $('progress-section').classList.add('visible');
+            $('results-area').classList.add('visible');
+
+            // Reset progress
+            $('progress-fill').style.width = '0%';
+            $('progress-pct-large').textContent = '0%';
+            updateRing(0);
+            $('stat-checked').textContent = '0';
+            $('stat-whois').textContent = '0';
+            $('stat-found').textContent = '0';
+            $('stat-elapsed').textContent = '0s';
+            $('speed-info').textContent = '⏳ 准备中...';
+            $('eta-info').textContent = '';
+            $('stat-found-card').classList.remove('has-results');
+
+            // Reset results
+            $('results-grid').innerHTML = '';
+            $('results-empty').classList.remove('visible');
+            $('scanning-hint').classList.add('visible');
+            $('results-count').textContent = '0';
+            $('results-filter').value = '';
+            $('filter-clear').classList.remove('visible');
+
+            // Reset sort buttons
+            document.querySelectorAll('.btn-sort').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-sort="default"]').classList.add('active');
+
+            // Set connection status
+            updateConnStatus('connected');
+
+            try {
+                const resp = await fetch('/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cfg),
+                });
+                const data = await resp.json();
+                if (data.error) {
+                    showToast('error', data.error);
+                    resetUI();
+                    return;
+                }
+                currentScanId = data.scan_id;
+                totalDomains = data.total;
+                scanStartTime = Date.now();
+                lastChecked = 0;
+                lastCheckTime = Date.now();
+                connectSSE(currentScanId, data.total);
+            } catch (err) {
+                showToast('error', '启动失败: ' + err.message);
+                resetUI();
+            }
+        }
+
+        // ================================================================
+        // SSE CONNECTION
+        // ================================================================
+        function connectSSE(scanId, total) {
+            eventSource = new EventSource(`/scan/events/${scanId}`);
+
+            eventSource.addEventListener('progress', (e) => {
+                const data = JSON.parse(e.data);
+                const pct = data.pct || 0;
+                $('progress-fill').style.width = pct + '%';
+                updateRing(pct);
+                $('progress-pct-large').textContent = pct.toFixed(1) + '%';
+                $('stat-checked').textContent = data.checked;
+                if (data.whois_queried !== undefined) {
+                    $('stat-whois').textContent = data.whois_queried;
+                }
+
+                // Speed & ETA
+                const now = Date.now();
+                const checked = data.checked;
+                const elapsed = (now - scanStartTime) / 1000;
+                $('stat-elapsed').textContent = elapsed.toFixed(1) + 's';
+
+                if (elapsed > 0.5 && checked > 0) {
+                    const speed = (checked / elapsed).toFixed(1);
+                    $('speed-info').textContent = `⚡ ~${speed} 域名/秒`;
+                    if (checked < total && speed > 0) {
+                        const remaining = total - checked;
+                        const eta = Math.ceil(remaining / parseFloat(speed));
+                        $('eta-info').textContent = `预计剩余 ${eta}s`;
+                    }
+                }
+            });
+
+            eventSource.addEventListener('snapshot', (e) => {
+                const data = JSON.parse(e.data);
+                if (data.checked > 0) {
+                    const pct = data.total > 0 ? (data.checked / data.total * 100) : 0;
+                    $('progress-fill').style.width = pct + '%';
+                    updateRing(pct);
+                    $('progress-pct-large').textContent = pct.toFixed(1) + '%';
+                    $('stat-checked').textContent = data.checked;
+                }
+            });
+
+            eventSource.addEventListener('found', (e) => {
+                const data = JSON.parse(e.data);
+                addFoundDomain(data.domain);
+                $('stat-found').textContent = foundDomains.length;
+                $('stat-found-card').classList.add('has-results');
+
+                // Confetti on first find
+                if (foundDomains.length === 1) {
+                    spawnConfetti(30);
+                }
+            });
+
+            eventSource.addEventListener('ratelimit', (e) => {
+                const data = JSON.parse(e.data);
+                showToast('warning', `⚠️ 检测到限流，自动降速至每批间隔 ${data.sleep}s`, 3000);
+            });
+
+            eventSource.addEventListener('done', (e) => {
+                scanningActive = false;
+                const data = JSON.parse(e.data);
+                $('progress-fill').style.width = '100%';
+                updateRing(100);
+                $('progress-pct-large').textContent = '100%';
+                $('scanning-hint').classList.remove('visible');
+
+                if (data.cancelled) {
+                    showToast('warning', '扫描已停止');
+                } else {
+                    const count = data.available_count || foundDomains.length;
+                    showToast('success', `扫描完成！共检测 ${data.total_checked} 个域名，找到 ${count} 个可注册域名`);
+                    if (count > 0) spawnConfetti(60);
+                }
+
+                $('stat-elapsed').textContent = (data.elapsed || 0) + 's';
+                $('stat-found').textContent = data.available_count || foundDomains.length;
+                $('results-count').textContent = `${data.available_count || foundDomains.length}`;
+
+                // Update domain card statuses
+                document.querySelectorAll('.domain-status.just-found').forEach(el => {
+                    el.className = 'domain-status available';
+                    el.textContent = '可注册';
+                });
+
+                saveToLocalStorage(foundDomains);
+                finishScan();
+            });
+
+            eventSource.addEventListener('error', (e) => {
+                scanningActive = false;
+                $('scanning-hint').classList.remove('visible');
+                if (e.data) {
+                    const data = JSON.parse(e.data);
+                    showToast('error', data.message || '扫描出错');
+                }
+                updateConnStatus('disconnected');
+                finishScan();
+            });
+
+            eventSource.addEventListener('heartbeat', () => {});
+        }
+
+        // ================================================================
+        // PROGRESS RING
+        // ================================================================
+        function updateRing(pct) {
+            const circle = $('progress-ring-fill');
+            const circumference = 2 * Math.PI * 52; // ~326.73
+            const offset = circumference - (pct / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        // ================================================================
+        // ADD FOUND DOMAIN
+        // ================================================================
+        function addFoundDomain(domain) {
+            foundDomains.push(domain);
+            const parts = domain.split('.');
+            const name = parts[0];
+            const tld = parts.slice(1).join('.');
+            const len = name.length;
+
+            const card = document.createElement('div');
+            card.className = 'domain-card';
+            card.dataset.domain = domain;
+            card.dataset.length = len;
+            card.dataset.name = name;
+            card.style.animationDelay = '0ms';
+            card.innerHTML = `
+                <div class="domain-card-main">
+                    <span class="domain-name">${domain}</span>
+                    <span class="domain-tld-badge">.${tld}</span>
+                </div>
+                <div class="domain-card-meta">
+                    <span class="domain-length">${len} 字母</span>
+                    <span class="domain-status just-found">✨ 发现</span>
+                </div>
+                <div class="domain-card-actions">
+                    <button class="btn-icon" title="复制" onclick="event.stopPropagation();copyDomain('${domain}', this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <a class="btn-icon" href="http://${domain}" target="_blank" title="打开" onclick="event.stopPropagation();">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                </div>
+            `;
+            $('results-grid').appendChild(card);
+
+            // Scroll to bottom
+            $('results-grid').scrollTop = $('results-grid').scrollHeight;
+
+            $('results-empty').classList.remove('visible');
+            $('results-count').textContent = `${foundDomains.length}`;
+
+            // Apply current filter
+            filterResults();
+        }
+
+        // ================================================================
+        // RENDER ALL RESULTS (for restore)
+        // ================================================================
+        function renderAllResults(domains, isLive = false) {
+            $('results-area').classList.add('visible');
+            $('scanning-hint').classList.remove('visible');
+
+            const grid = $('results-grid');
+            grid.innerHTML = '';
+            foundDomains = domains.slice();
+
+            if (!domains || domains.length === 0) {
+                $('results-empty').classList.add('visible');
+                return;
+            }
+
+            $('results-empty').classList.remove('visible');
+
+            domains.forEach((domain, i) => {
+                const parts = domain.split('.');
+                const name = parts[0];
+                const tld = parts.slice(1).join('.');
+                const len = name.length;
+
+                const card = document.createElement('div');
+                card.className = 'domain-card';
+                card.dataset.domain = domain;
+                card.dataset.length = len;
+                card.dataset.name = name;
+                card.style.animationDelay = `${i * 40}ms`;
+                card.innerHTML = `
+                    <div class="domain-card-main">
+                        <span class="domain-name">${domain}</span>
+                        <span class="domain-tld-badge">.${tld}</span>
+                    </div>
+                    <div class="domain-card-meta">
+                        <span class="domain-length">${len} 字母</span>
+                        <span class="domain-status available">可注册</span>
+                    </div>
+                    <div class="domain-card-actions">
+                        <button class="btn-icon" title="复制" onclick="event.stopPropagation();copyDomain('${domain}', this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </button>
+                        <a class="btn-icon" href="http://${domain}" target="_blank" title="打开" onclick="event.stopPropagation();">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            $('results-count').textContent = `${domains.length}`;
+            $('results-filter').value = '';
+            $('filter-clear').classList.remove('visible');
+            currentSort = 'default';
+            document.querySelectorAll('.btn-sort').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-sort="default"]').classList.add('active');
+        }
+
+        // ================================================================
+        // FILTER & SORT
+        // ================================================================
+        function filterResults() {
+            const query = $('results-filter').value.toLowerCase().trim();
+            const clearBtn = $('filter-clear');
+            const grid = $('results-grid');
+            const cards = grid.querySelectorAll('.domain-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const domain = (card.dataset.domain || '').toLowerCase();
+                if (!query || domain.includes(query)) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            clearBtn.classList.toggle('visible', query.length > 0);
+            $('results-count').textContent = `${visibleCount}`;
+        }
+
+        function clearFilter() {
+            $('results-filter').value = '';
+            filterResults();
+            $('results-filter').focus();
+        }
+
+        function setSort(type, btn) {
+            currentSort = type;
+            document.querySelectorAll('.btn-sort').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            applySort();
+        }
+
+        function applySort() {
+            const grid = $('results-grid');
+            const cards = Array.from(grid.querySelectorAll('.domain-card'));
+
+            cards.sort((a, b) => {
+                if (currentSort === 'name') {
+                    return (a.dataset.name || '').localeCompare(b.dataset.name || '');
+                } else if (currentSort === 'length') {
+                    return parseInt(a.dataset.length || 0) - parseInt(b.dataset.length || 0);
+                }
+                // default: keep DOM order (found order)
+                return 0;
+            });
+
+            cards.forEach((card, i) => {
+                card.style.animationDelay = `${i * 30}ms`;
+                card.style.animation = 'none';
+                card.offsetHeight; // reflow
+                card.style.animation = '';
+                grid.appendChild(card);
+            });
+        }
+
+        // ================================================================
+        // COPY & EXPORT
+        // ================================================================
+        async function copyDomain(domain, btn) {
+            try {
+                await navigator.clipboard.writeText(domain);
+                // Brief feedback on the button
+                const origHTML = btn.innerHTML;
+                btn.innerHTML = '<span style="color:#10b981;font-size:16px;">✓</span>';
+                setTimeout(() => { btn.innerHTML = origHTML; }, 1200);
+                showToast('success', `已复制 ${domain}`, 2000);
+            } catch (err) {
+                showToast('error', '复制失败');
+            }
+        }
+
+        async function copyAllDomains() {
+            const visibleDomains = Array.from($('results-grid').querySelectorAll('.domain-card:not(.hidden)'))
+                .map(c => c.dataset.domain);
+            if (visibleDomains.length === 0) {
+                showToast('info', '没有可复制的域名');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(visibleDomains.join('\n'));
+                showToast('success', `已复制 ${visibleDomains.length} 个域名`, 2500);
+            } catch (err) {
+                showToast('error', '复制失败');
+            }
+        }
+
+        function exportResults() {
+            const visibleDomains = Array.from($('results-grid').querySelectorAll('.domain-card:not(.hidden)'))
+                .map(c => c.dataset.domain);
+            if (visibleDomains.length === 0) {
+                showToast('info', '没有可导出的域名');
+                return;
+            }
+            const tld = $('tld').value;
+            const blob = new Blob([visibleDomains.join('\n')], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `available_${tld}_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('success', `已导出 ${visibleDomains.length} 个域名`, 2000);
+        }
+
+        // ================================================================
+        // CONFETTI
+        // ================================================================
+        function spawnConfetti(count = 40) {
+            const container = $('confetti-container');
+            const colors = ['#6366f1', '#22d3ee', '#10b981', '#f59e0b', '#ef4444', '#a78bfa', '#f472b6', '#38bdf8'];
+
+            for (let i = 0; i < count; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + '%';
+                piece.style.top = -(Math.random() * 20 + 10) + 'px';
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.width = (Math.random() * 8 + 6) + 'px';
+                piece.style.height = (Math.random() * 8 + 6) + 'px';
+                piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                piece.style.animationDelay = Math.random() * 0.8 + 's';
+                piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                container.appendChild(piece);
+
+                setTimeout(() => piece.remove(), 3500);
+            }
+        }
+
+        // ================================================================
+        // CONNECTION STATUS
+        // ================================================================
+        function updateConnStatus(status) {
+            const dot = $('conn-dot');
+            const text = $('conn-text');
+            dot.className = 'conn-dot ' + status;
+            const labels = { connected: '已连接', reconnecting: '重连中...', disconnected: '已断开' };
+            text.textContent = labels[status] || '就绪';
+        }
+
+        // ================================================================
+        // SAVE TO LOCALSTORAGE
+        // ================================================================
+        function saveToLocalStorage(domains) {
+            try {
+                const tld = $('tld').value;
+                const data = {
+                    tld: tld,
+                    domains: domains,
+                    timestamp: Date.now(),
+                    config: getConfig(),
+                };
+                localStorage.setItem('domain_checker_last_results', JSON.stringify(data));
+            } catch (e) { /* ignore */ }
+        }
+
+        // ================================================================
+        // FINISH SCAN
+        // ================================================================
+        function finishScan() {
+            if (eventSource) { eventSource.close(); eventSource = null; }
+            resetUI();
+            updateConnStatus('connected');
+        }
+
+        // ================================================================
+        // CANCEL
+        // ================================================================
+        async function cancelScan() {
+            if (!currentScanId) return;
+            try {
+                await fetch(`/scan/cancel/${currentScanId}`, { method: 'POST' });
+                if (eventSource) { eventSource.close(); eventSource = null; }
+                showToast('warning', '正在停止扫描...');
+            } catch (err) {
+                console.error('取消失败:', err);
+            }
+        }
+
+        // ================================================================
+        // RESET UI
+        // ================================================================
+        function resetUI() {
+            $('btn-start').disabled = false;
+            $('btn-start').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> 开始扫描';
+            $('btn-cancel').classList.add('hidden');
+            scanningActive = false;
+        }
+
+        // ================================================================
+        // KEYBOARD SHORTCUTS
+        // ================================================================
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+K / Cmd+K: focus filter
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                $('results-filter').focus();
+                return;
+            }
+            // Ctrl+Shift+C: copy all
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                copyAllDomains();
+                return;
+            }
+            // Escape: cancel scan
+            if (e.key === 'Escape' && scanningActive) {
+                e.preventDefault();
+                cancelScan();
+                return;
+            }
+            // Enter: start scan (when not in an input that would conflict)
+            if (e.key === 'Enter' && !scanningActive) {
+                const active = document.activeElement;
+                if (!active || active.tagName === 'BODY' || active.closest('.card') === $('config-card')) {
+                    e.preventDefault();
+                    startScan();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
