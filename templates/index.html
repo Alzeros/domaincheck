@@ -1119,15 +1119,15 @@
         <div class="card" id="config-card">
             <!-- Tab Bar -->
             <div class="tab-bar" id="tab-bar">
-                <button class="tab active" data-mode="brute" onclick="setMode('brute')">
+                <button class="tab active" data-mode="prefix" onclick="setMode('prefix')">
+                    <span class="tab-icon">✨</span>
+                    <span class="tab-label">单词模式</span>
+                    <span class="tab-desc">前缀+单词+后缀 / @=无</span>
+                </button>
+                <button class="tab" data-mode="brute" onclick="setMode('brute')">
                     <span class="tab-icon">🔢</span>
                     <span class="tab-label">暴力扫描</span>
                     <span class="tab-desc">全部字母组合</span>
-                </button>
-                <button class="tab" data-mode="prefix" onclick="setMode('prefix')">
-                    <span class="tab-icon">✨</span>
-                    <span class="tab-label">单词模式</span>
-                    <span class="tab-desc">前缀+单词 / @=无前缀</span>
                 </button>
             </div>
 
@@ -1185,21 +1185,29 @@
             <!-- Prefix+Word config -->
             <div id="config-prefix" class="hidden">
                 <div class="inline-row">
-                    <div class="form-group" style="flex:0 0 100px;">
-                        <span class="form-label">前缀字母 <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(@=无)</span></span>
-                        <input type="text" id="prefix" value="x" maxlength="2" class="input-field" style="text-align:center;font-size:18px;font-weight:700;width:80px;">
+                    <div class="form-group" style="flex:0 0 72px;">
+                        <span class="form-label">前缀 <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(@=无)</span></span>
+                        <input type="text" id="prefix" value="x" maxlength="4" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
                     </div>
-                    <div class="form-group" style="flex:0 0 160px;">
+                    <div class="form-group" style="flex:0 0 140px;">
                         <span class="form-label">单词长度</span>
                         <select id="word-length" class="select-field">
+                            <option value="1">1 字母单词</option>
+                            <option value="2">2 字母单词</option>
                             <option value="3">3 字母单词</option>
                             <option value="4">4 字母单词</option>
                         </select>
                     </div>
-                    <div class="form-group" style="flex:0 0 140px;">
+                    <div class="form-group" style="flex:0 0 72px;">
+                        <span class="form-label">后缀 <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(@=无)</span></span>
+                        <input type="text" id="suffix" value="@" maxlength="4" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
+                    </div>
+                    <div class="form-group" style="flex:0 0 auto;">
                         <span class="form-label">筛选</span>
                         <div class="chip-group">
                             <label class="chip"><input type="checkbox" id="only-common" checked><span class="chip-check"></span>仅常用词</label>
+                            <label class="chip"><input type="checkbox" id="use-prefix" checked><span class="chip-check"></span>前缀</label>
+                            <label class="chip"><input type="checkbox" id="use-suffix" checked><span class="chip-check"></span>后缀</label>
                         </div>
                     </div>
                 </div>
@@ -1410,10 +1418,13 @@
             restoreLastResultsFromServer();
             checkActiveScan();
             loadWordMeta();
-            setMode('brute');
+            setMode('prefix');
 
-            // Focus prefix input on Enter
+            // Focus prefix/suffix input on Enter
             $('prefix').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !scanningActive) startScan();
+            });
+            $('suffix').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !scanningActive) startScan();
             });
         });
@@ -1430,16 +1441,30 @@
                     const onlyCommon = $('only-common').checked;
                     const info = data[len] || { total: 0, common_count: 0 };
                     const count = onlyCommon ? info.common_count : info.total;
-                    const raw = $('prefix').value.trim().toLowerCase();
-                    const noPrefix = (raw === '' || raw === '@');
-                    $('word-count-info').textContent = noPrefix
-                        ? `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（无前缀）`
-                        : `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名`;
+                    const useP = $('use-prefix').checked;
+                    const useS = $('use-suffix').checked;
+                    const rawP = useP ? $('prefix').value.trim().toLowerCase() : '';
+                    const rawS = useS ? $('suffix').value.trim().toLowerCase() : '';
+                    const hasPrefix = useP && rawP !== '' && rawP !== '@';
+                    const hasSuffix = useS && rawS !== '' && rawS !== '@';
+
+                    if (!hasPrefix && !hasSuffix) {
+                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（无前后缀）`;
+                    } else if (hasPrefix && !hasSuffix) {
+                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（前缀: ${rawP}）`;
+                    } else if (!hasPrefix && hasSuffix) {
+                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（后缀: ${rawS}）`;
+                    } else {
+                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（前缀: ${rawP}, 后缀: ${rawS}）`;
+                    }
                 };
                 updateInfo();
                 $('word-length').addEventListener('change', updateInfo);
                 $('only-common').addEventListener('change', updateInfo);
+                $('use-prefix').addEventListener('change', updateInfo);
+                $('use-suffix').addEventListener('change', updateInfo);
                 $('prefix').addEventListener('input', updateInfo);
+                $('suffix').addEventListener('input', updateInfo);
             } catch (e) {
                 $('word-count-info').textContent = '⚠️ 无法加载词表';
             }
@@ -1556,12 +1581,16 @@
             const tld = $('tld').value;
 
             if (currentMode === 'prefix') {
-                const raw = $('prefix').value.trim().toLowerCase();
-                // "@" 或空表示无前缀（直接搜单词本身）
-                const prefix = (raw === '' || raw === '@') ? '' : raw;
+                const rawP = $('prefix').value.trim().toLowerCase();
+                const rawS = $('suffix').value.trim().toLowerCase();
+                const useP = $('use-prefix').checked;
+                const useS = $('use-suffix').checked;
+                // 未启用或 @/空 均视为无前缀/无后缀
+                const prefix = (useP && rawP !== '' && rawP !== '@') ? rawP : '';
+                const suffix = (useS && rawS !== '' && rawS !== '@') ? rawS : '';
                 const wordLength = parseInt($('word-length').value);
                 const onlyCommon = $('only-common').checked;
-                return { mode: 'prefix_word', tld, prefix, word_length: wordLength, only_common: onlyCommon };
+                return { mode: 'prefix_word', tld, prefix, suffix, word_length: wordLength, only_common: onlyCommon };
             }
 
             const lengths = Array.from(
@@ -1991,9 +2020,22 @@
             const tld = $('tld').value;
             let label = '';
             if (currentMode === 'prefix') {
-                const prefix = $('prefix').value.trim().toLowerCase() || 'x';
+                const useP = $('use-prefix').checked;
+                const useS = $('use-suffix').checked;
+                const rawP = $('prefix').value.trim().toLowerCase() || 'x';
+                const rawS = $('suffix').value.trim().toLowerCase() || '';
+                const prefix = (useP && rawP !== '' && rawP !== '@') ? rawP : '';
+                const suffix = (useS && rawS !== '' && rawS !== '@') ? rawS : '';
                 const wlen = $('word-length').value;
-                label = (prefix === '' || prefix === '@') ? `${wlen}字母单词` : `${prefix}+${wlen}字母`;
+                if (!prefix && !suffix) {
+                    label = `${wlen}字母单词`;
+                } else if (prefix && !suffix) {
+                    label = `${prefix}+${wlen}字母`;
+                } else if (!prefix && suffix) {
+                    label = `${wlen}字母+${suffix}`;
+                } else {
+                    label = `${prefix}+${wlen}字母+${suffix}`;
+                }
             } else {
                 const checked = Array.from(document.querySelectorAll('#config-brute input[type="checkbox"][value]:checked'))
                     .map(cb => cb.value).sort();

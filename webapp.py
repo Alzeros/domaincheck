@@ -83,8 +83,9 @@ async def start_scan(data: dict):
     domains: list[str] = []
 
     if mode == "prefix_word":
-        # "前缀 + 单词"模式
+        # "前缀 + 单词 + 后缀"模式
         prefix = data.get("prefix", "x").lower()
+        suffix = data.get("suffix", "@").lower()
         word_length = data.get("word_length", 3)
         only_common = data.get("only_common", True)
 
@@ -96,13 +97,18 @@ async def start_scan(data: dict):
             common_count = wl.get("common_count", 0)
             words = words[:common_count]
 
-        if prefix in ("@", ""):
-                # 无前缀：直接使用单词作为域名主体
-                domains = [f"{word}.{tld}" for word in words]
-                print(f"[扫描] 单词模式: {len(words)} 个 {word_length}字母单词 → {tld}")
-            else:
-                domains = [f"{prefix}{word}.{tld}" for word in words]
-                print(f"[扫描] 前缀模式: {prefix} + {len(words)} 个 {word_length}字母单词 → {tld}")
+        p = prefix if prefix not in ("@", "") else ""
+        s = suffix if suffix not in ("@", "") else ""
+        domains = [f"{p}{word}{s}.{tld}" for word in words]
+
+        if p and s:
+            print(f"[扫描] 前后缀模式: {p}+单词+{s} → {tld}")
+        elif p:
+            print(f"[扫描] 前缀模式: {p} + {len(words)} 个 {word_length}字母单词 → {tld}")
+        elif s:
+            print(f"[扫描] 后缀模式: 单词+{s} → {tld}")
+        else:
+            print(f"[扫描] 单词模式: {len(words)} 个 {word_length}字母单词 → {tld}")
 
     else:
         # 暴力扫描模式（原来的逻辑）
@@ -149,6 +155,7 @@ async def start_scan(data: dict):
     if mode == "prefix_word":
         resp["mode"] = "prefix_word"
         resp["prefix"] = data.get("prefix", "x")
+        resp["suffix"] = data.get("suffix", "@")
         resp["word_length"] = data.get("word_length", 3)
     else:
         resp["lengths"] = data.get("lengths", [2])
@@ -246,7 +253,7 @@ async def get_active_scan():
 async def get_words_meta():
     """返回可用单词表的元信息"""
     meta = {}
-    for length in [3, 4]:
+    for length in [1, 2, 3, 4]:
         if length not in WORD_CACHE:
             WORD_CACHE[length] = load_words(length)
         wl = WORD_CACHE[length]
