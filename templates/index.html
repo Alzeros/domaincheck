@@ -1126,8 +1126,8 @@
                 </button>
                 <button class="tab" data-mode="prefix" onclick="setMode('prefix')">
                     <span class="tab-icon">✨</span>
-                    <span class="tab-label">前缀 + 单词</span>
-                    <span class="tab-desc">智能单词组合</span>
+                    <span class="tab-label">单词模式</span>
+                    <span class="tab-desc">前缀+单词 / @=无前缀</span>
                 </button>
             </div>
 
@@ -1186,7 +1186,7 @@
             <div id="config-prefix" class="hidden">
                 <div class="inline-row">
                     <div class="form-group" style="flex:0 0 100px;">
-                        <span class="form-label">前缀字母</span>
+                        <span class="form-label">前缀字母 <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(@=无)</span></span>
                         <input type="text" id="prefix" value="x" maxlength="2" class="input-field" style="text-align:center;font-size:18px;font-weight:700;width:80px;">
                     </div>
                     <div class="form-group" style="flex:0 0 160px;">
@@ -1430,12 +1430,16 @@
                     const onlyCommon = $('only-common').checked;
                     const info = data[len] || { total: 0, common_count: 0 };
                     const count = onlyCommon ? info.common_count : info.total;
-                    $('word-count-info').textContent =
-                        `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名`;
+                    const raw = $('prefix').value.trim().toLowerCase();
+                    const noPrefix = (raw === '' || raw === '@');
+                    $('word-count-info').textContent = noPrefix
+                        ? `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（无前缀）`
+                        : `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名`;
                 };
                 updateInfo();
                 $('word-length').addEventListener('change', updateInfo);
                 $('only-common').addEventListener('change', updateInfo);
+                $('prefix').addEventListener('input', updateInfo);
             } catch (e) {
                 $('word-count-info').textContent = '⚠️ 无法加载词表';
             }
@@ -1552,13 +1556,11 @@
             const tld = $('tld').value;
 
             if (currentMode === 'prefix') {
-                const prefix = $('prefix').value.trim().toLowerCase();
+                const raw = $('prefix').value.trim().toLowerCase();
+                // "@" 或空表示无前缀（直接搜单词本身）
+                const prefix = (raw === '' || raw === '@') ? '' : raw;
                 const wordLength = parseInt($('word-length').value);
                 const onlyCommon = $('only-common').checked;
-                if (!prefix) {
-                    showToast('warning', '请输入前缀字母');
-                    return null;
-                }
                 return { mode: 'prefix_word', tld, prefix, word_length: wordLength, only_common: onlyCommon };
             }
 
@@ -1991,7 +1993,7 @@
             if (currentMode === 'prefix') {
                 const prefix = $('prefix').value.trim().toLowerCase() || 'x';
                 const wlen = $('word-length').value;
-                label = `${prefix}+${wlen}字母`;
+                label = (prefix === '' || prefix === '@') ? `${wlen}字母单词` : `${prefix}+${wlen}字母`;
             } else {
                 const checked = Array.from(document.querySelectorAll('#config-brute input[type="checkbox"][value]:checked'))
                     .map(cb => cb.value).sort();

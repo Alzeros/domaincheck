@@ -96,8 +96,13 @@ async def start_scan(data: dict):
             common_count = wl.get("common_count", 0)
             words = words[:common_count]
 
-        domains = [f"{prefix}{word}.{tld}" for word in words]
-        print(f"[扫描] 前缀模式: {prefix} + {len(words)} 个 {word_length}字母单词 → {tld}")
+        if prefix in ("@", ""):
+                # 无前缀：直接使用单词作为域名主体
+                domains = [f"{word}.{tld}" for word in words]
+                print(f"[扫描] 单词模式: {len(words)} 个 {word_length}字母单词 → {tld}")
+            else:
+                domains = [f"{prefix}{word}.{tld}" for word in words]
+                print(f"[扫描] 前缀模式: {prefix} + {len(words)} 个 {word_length}字母单词 → {tld}")
 
     else:
         # 暴力扫描模式（原来的逻辑）
