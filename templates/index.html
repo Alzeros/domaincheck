@@ -1987,11 +1987,21 @@
                 return;
             }
             const tld = $('tld').value;
+            let label = '';
+            if (currentMode === 'prefix') {
+                const prefix = $('prefix').value.trim().toLowerCase() || 'x';
+                const wlen = $('word-length').value;
+                label = `${prefix}+${wlen}字母`;
+            } else {
+                const checked = Array.from(document.querySelectorAll('#config-brute input[type="checkbox"][value]:checked'))
+                    .map(cb => cb.value).sort();
+                label = checked.length ? checked.join('-') + '字母' : '自定义';
+            }
             const blob = new Blob([visibleDomains.join('\n')], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `available_${tld}_${new Date().toISOString().slice(0,10)}.txt`;
+            a.download = `${label}.${tld}_${new Date().toISOString().slice(0,10)}.txt`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('success', `已导出 ${visibleDomains.length} 个域名`, 2000);
