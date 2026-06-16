@@ -46,6 +46,32 @@
             --transition-slow: 400ms cubic-bezier(0.4,0,0.2,1);
         }
 
+        [data-theme="light"] {
+            --bg-primary: #e8eaed;
+            --bg-secondary: #f3f4f6;
+            --bg-card: rgba(255,255,255,0.7);
+            --bg-card-hover: rgba(255,255,255,0.85);
+            --bg-input: rgba(255,255,255,0.6);
+            --border-subtle: rgba(0,0,0,0.08);
+            --border-card: rgba(0,0,0,0.12);
+            --border-active: rgba(0,180,210,0.5);
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --accent: #0891b2;
+            --accent-glow: rgba(8,145,178,0.2);
+            --accent2: #0891b2;
+            --accent2-glow: rgba(8,145,178,0.18);
+            --success: #059669;
+            --success-glow: rgba(5,150,105,0.15);
+            --warning: #d97706;
+            --error: #dc2626;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
+            --shadow-glow: 0 0 20px rgba(8,145,178,0.15);
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         html { scroll-behavior: smooth; }
@@ -87,6 +113,19 @@
             background-size: 60px 60px;
             pointer-events: none;
             z-index: 0;
+        }
+
+        [data-theme="light"] body::before {
+            background:
+                radial-gradient(ellipse at 30% 0%, rgba(8,145,178,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 0%, rgba(8,145,178,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(8,145,178,0.03) 0%, transparent 50%);
+        }
+
+        [data-theme="light"] body::after {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.025) 1px, transparent 1px);
         }
 
         /* Scrollbar */
@@ -234,6 +273,26 @@
         .hero-badge .dot.green { background: var(--success); box-shadow: 0 0 5px var(--success-glow); }
         .hero-badge .dot.blue { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
         .hero-badge .dot.cyan { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
+
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px; height: 30px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all var(--transition-fast);
+            padding: 0;
+            line-height: 1;
+        }
+        .theme-toggle:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.15);
+            transform: scale(1.1);
+        }
 
         /* Connection status — embedded in hero */
 
@@ -663,6 +722,10 @@
             background: #1a1a1a;
             color: #ffffff;
         }
+        [data-theme="light"] .select-field option {
+            background: #ffffff;
+            color: #0f172a;
+        }
 
         .inline-row {
             display: flex;
@@ -1074,6 +1137,14 @@
             color: #67e8f9;
             animation: pulse 1.5s ease-in-out infinite;
         }
+        [data-theme="light"] .domain-status.available {
+            background: rgba(16,185,129,0.15);
+            color: #059669;
+        }
+        [data-theme="light"] .domain-status.just-found {
+            background: rgba(8,145,178,0.12);
+            color: #0891b2;
+        }
 
         .domain-card-actions {
             display: flex;
@@ -1392,6 +1463,9 @@
                         <span class="hero-badge"><span class="dot blue"></span> DNS+RDAP+Whois</span>
                         <span class="hero-badge"><span class="dot cyan"></span> SSE</span>
                     </div>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+                        <span id="theme-icon">🌙</span>
+                    </button>
                 </div>
             </div>
         </header>
@@ -1752,6 +1826,7 @@
         // INIT
         // ================================================================
         window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
             restoreLastResults();
             restoreLastResultsFromServer();
             checkActiveScan();
@@ -2695,6 +2770,29 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        // ================================================================
+        // THEME TOGGLE
+        // ================================================================
+        function initTheme() {
+            const saved = localStorage.getItem('dc-theme');
+            const theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+            document.documentElement.dataset.theme = theme;
+            updateThemeIcon(theme);
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+            html.dataset.theme = next;
+            localStorage.setItem('dc-theme', next);
+            updateThemeIcon(next);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = $('theme-icon');
+            if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
         }
 
         // ================================================================
