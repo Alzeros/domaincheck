@@ -1,4 +1,7 @@
 aiohttp>=3.9.0
 aiodns>=3.0.0
+fastapi>=0.100.0
 python-whois>=0.9.0
+starlette>=0.27.0
 tqdm>=4.65.0
+uvicorn>=0.23.0

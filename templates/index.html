@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DomainChecker — 短域名注册检测</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         /* ================================================================
            CSS DESIGN SYSTEM — Custom Properties & Reset
@@ -96,109 +99,160 @@
            LAYOUT
            ================================================================ */
         .container {
-            max-width: 900px;
+            max-width: 1260px;
             margin: 0 auto;
             padding: 20px 16px 60px;
             position: relative;
             z-index: 1;
         }
 
-        /* ================================================================
-           HERO SECTION
-           ================================================================ */
-        .hero {
-            text-align: center;
-            padding: 48px 20px 32px;
-            position: relative;
+        .content-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
         }
 
-        .hero-icon {
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ================================================================
+           SIDEBAR — history panel
+           ================================================================ */
+        .sidebar {
+            width: 340px;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 120px);
+            position: sticky;
+            top: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+        .sidebar-header h3 {
+            font-family: 'Space Grotesk', var(--font-sans);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-header h3 .count-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(34,211,238,0.1));
-            border: 1px solid var(--border-active);
-            border-radius: var(--radius-xl);
-            margin-bottom: 20px;
+            min-width: 20px; height: 20px;
+            padding: 0 6px;
+            background: var(--bg-input);
+            border-radius: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 14px 14px;
+        }
+        .sidebar-body::-webkit-scrollbar { width: 4px; }
+        .sidebar-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+        /* ================================================================
+           HERO SECTION — compact dual-row bar
+           ================================================================ */
+        .hero {
+            text-align: center;
+            padding: 20px 0 12px;
             position: relative;
-            animation: float 3s ease-in-out infinite;
         }
-
-        .hero-icon::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 28px;
-            background: var(--accent);
-            opacity: 0.4;
-            filter: blur(18px);
-            z-index: -1;
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        .hero-icon svg { width: 36px; height: 36px; }
 
         .hero h1 {
-            font-size: clamp(28px, 5vw, 40px);
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 8px;
+            font-family: 'Space Grotesk', var(--font-sans);
+            font-size: clamp(24px, 4vw, 32px);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 10px;
             background: linear-gradient(135deg, #ffffff 0%, #00e5ff 40%, #00e5ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .hero-tagline {
-            font-size: 16px;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
+        .hero-bottom {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-bottom-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .hero-badges {
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
+            gap: 5px;
+            padding: 4px 10px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            font-size: 13px;
-            color: var(--text-secondary);
+            border-radius: 14px;
+            font-size: 11px;
+            color: var(--text-muted);
             backdrop-filter: blur(8px);
+            white-space: nowrap;
         }
 
-        .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
-        .hero-badge .dot.green { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
-        .hero-badge .dot.blue { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
-        .hero-badge .dot.cyan { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+        .hero-badge .dot { width: 5px; height: 5px; border-radius: 50%; }
+        .hero-badge .dot.green { background: var(--success); box-shadow: 0 0 5px var(--success-glow); }
+        .hero-badge .dot.blue { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
+        .hero-badge .dot.cyan { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
 
-        /* Connection status */
+        /* Connection status — embedded in hero */
+
+        /* Connection status — embedded in hero */
         .conn-status {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
+            gap: 5px;
+            font-size: 11px;
             color: var(--text-muted);
-            margin-top: 12px;
         }
         .conn-dot {
-            width: 7px; height: 7px;
+            width: 6px; height: 6px;
             border-radius: 50%;
             background: var(--text-muted);
             transition: background var(--transition);
         }
-        .conn-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
-        .conn-dot.reconnecting { background: var(--warning); box-shadow: 0 0 6px rgba(245,158,11,0.3); animation: pulse 1s infinite; }
+        .conn-dot.connected { background: var(--success); box-shadow: 0 0 5px var(--success-glow); }
+        .conn-dot.reconnecting { background: var(--warning); box-shadow: 0 0 5px rgba(245,158,11,0.3); animation: pulse 1s infinite; }
         .conn-dot.disconnected { background: var(--error); }
 
         /* ================================================================
@@ -242,6 +296,181 @@
             background: none; border: none; color: inherit;
         }
         .restore-banner .close-banner:hover { opacity: 1; }
+
+        /* ================================================================
+           INCREMENTAL RECHECK BANNER
+           ================================================================ */
+        .incremental-banner {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(16,185,129,0.06);
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--success);
+            backdrop-filter: blur(8px);
+        }
+        .incremental-banner.visible { display: flex; }
+        .incremental-banner .ib-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            flex-shrink: 0;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ================================================================
+           SIDEBAR — history panel styles
+           ================================================================ */
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+        .history-item:hover {
+            border-color: rgba(255,255,255,0.15);
+            background: var(--bg-card-hover);
+        }
+
+        .history-item-main {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .history-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+        }
+        .history-item-meta .hi-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .hi-tag.brute {
+            background: rgba(0,229,255,0.1);
+            color: var(--accent);
+        }
+        .hi-tag.prefix {
+            background: rgba(139,92,246,0.1);
+            color: #a78bfa;
+        }
+
+        .history-item-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .history-item-stat {
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        .history-item-stat .hi-count {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--success);
+        }
+
+        .history-item-delete {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all var(--transition-fast);
+            opacity: 0;
+        }
+        .history-item:hover .history-item-delete { opacity: 1; }
+        .history-item-delete:hover { background: rgba(239,68,68,0.15); color: var(--error); }
+
+        /* History detail panel */
+        .history-detail {
+            display: none;
+            margin-bottom: 8px;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+        }
+        .history-detail.open { display: block; }
+
+        .history-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .history-detail-header span {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .history-detail .hi-available-list {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-secondary);
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+            padding: 8px 0;
+        }
+        .history-detail .hi-available-list span {
+            background: rgba(16,185,129,0.08);
+            color: var(--success);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .sidebar-empty {
+            text-align: center;
+            padding: 40px 16px;
+            color: var(--text-muted);
+        }
+        .sidebar-empty .empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+        .sidebar-empty p { font-size: 13px; }
 
         /* ================================================================
            TAB BAR
@@ -776,6 +1005,8 @@
             border-radius: var(--radius-md);
             transition: all var(--transition);
             animation: slideInUp 0.4s ease both;
+            content-visibility: auto;
+            contain-intrinsic-size: 58px;
         }
         .domain-card:hover {
             background: var(--bg-card-hover);
@@ -857,6 +1088,58 @@
             transition: opacity var(--transition-fast);
         }
         .domain-card:hover .domain-card-actions .btn-icon { opacity: 1; }
+
+        /* ================================================================
+           PAGINATION BAR
+           ================================================================ */
+        .pagination-bar {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 0 4px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .pagination-bar.visible { display: flex; }
+
+        .page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px; height: 32px;
+            padding: 0 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            user-select: none;
+        }
+        .page-btn:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.18);
+            color: var(--text-primary);
+        }
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .page-btn.active {
+            background: rgba(0,229,255,0.12);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .page-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0 8px;
+            font-variant-numeric: tabular-nums;
+        }
 
         /* ================================================================
            EMPTY STATE
@@ -1049,7 +1332,17 @@
            RESPONSIVE
            ================================================================ */
         @media (max-width: 768px) {
-            .hero { padding: 32px 16px 24px; }
+            .hero { padding: 14px 0 8px; }
+            .hero-bottom-row { justify-content: center; }
+            .content-row { flex-direction: column; }
+            .sidebar {
+                width: 100%;
+                max-height: 260px;
+                position: static;
+                border-radius: var(--radius-lg);
+                z-index: 900;
+            }
+            .sidebar-body { max-height: 220px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .progress-top { flex-direction: column; align-items: center; }
             .results-grid { max-height: 400px; }
@@ -1072,6 +1365,8 @@
             .domain-card-actions .btn-icon { opacity: 1; }
             .btn { padding: 8px 16px; font-size: 13px; }
             .pill { padding: 6px 12px; font-size: 12px; }
+            .page-btn { min-width: 28px; height: 28px; font-size: 12px; padding: 0 8px; }
+            .page-info { font-size: 12px; }
         }
     </style>
 </head>
@@ -1083,26 +1378,21 @@
     <div class="confetti-container" id="confetti-container"></div>
 
     <div class="container">
-        <!-- ====== HERO ====== -->
+        <!-- ====== HERO ====== (full-width row) -->
         <header class="hero">
-            <div class="hero-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="url(#hero-grad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <defs><linearGradient id="hero-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#00e5ff"/></linearGradient></defs>
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="2" y1="12" x2="22" y2="12"/>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                </svg>
-            </div>
             <h1>DomainChecker</h1>
-            <p class="hero-tagline">发现可注册的短域名，实时检测 · 多级验证</p>
-            <div class="hero-badges">
-                <span class="hero-badge"><span class="dot green"></span> 11 个 TLD</span>
-                <span class="hero-badge"><span class="dot blue"></span> DNS + RDAP + Whois</span>
-                <span class="hero-badge"><span class="dot cyan"></span> 实时 SSE 推送</span>
-            </div>
-            <div class="conn-status" id="conn-status">
-                <span class="conn-dot" id="conn-dot"></span>
-                <span id="conn-text">就绪</span>
+            <div class="hero-bottom">
+                <div class="hero-bottom-row">
+                    <div class="conn-status" id="conn-status">
+                        <span class="conn-dot" id="conn-dot"></span>
+                        <span id="conn-text">就绪</span>
+                    </div>
+                    <div class="hero-badges">
+                        <span class="hero-badge"><span class="dot green"></span> 11 TLD</span>
+                        <span class="hero-badge"><span class="dot blue"></span> DNS+RDAP+Whois</span>
+                        <span class="hero-badge"><span class="dot cyan"></span> SSE</span>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -1115,21 +1405,53 @@
             </div>
         </div>
 
-        <!-- ====== CONFIG CARD ====== -->
-        <div class="card" id="config-card">
-            <!-- Tab Bar -->
-            <div class="tab-bar" id="tab-bar">
-                <button class="tab active" data-mode="prefix" onclick="setMode('prefix')">
-                    <span class="tab-icon">✨</span>
-                    <span class="tab-label">单词模式</span>
-                    <span class="tab-desc">前缀+单词+后缀 / @=无</span>
-                </button>
-                <button class="tab" data-mode="brute" onclick="setMode('brute')">
-                    <span class="tab-icon">🔢</span>
-                    <span class="tab-label">暴力扫描</span>
-                    <span class="tab-desc">全部字母组合</span>
-                </button>
-            </div>
+        <!-- ====== INCREMENTAL RECHECK BANNER ====== -->
+        <div class="incremental-banner" id="incremental-banner">
+            <span class="ib-dot"></span>
+            <span id="incremental-text"></span>
+        </div>
+
+        <!-- ====== CONTENT ROW: sidebar + main ====== -->
+        <div class="content-row">
+
+            <!-- ====== HISTORY SIDEBAR ====== -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>📋 扫描历史 <span class="count-badge" id="history-count">0</span></h3>
+                    <button class="btn-icon" onclick="loadHistory()" title="刷新历史">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="sidebar-body">
+                    <div class="sidebar-empty" id="history-empty">
+                        <div class="empty-icon">📭</div>
+                        <p>还没有扫描记录</p>
+                    </div>
+                    <div id="history-list"></div>
+                    <div class="history-detail" id="history-detail"></div>
+                </div>
+            </aside>
+
+            <div class="main-content">
+
+                <!-- ====== CONFIG CARD ====== -->
+            <div class="card" id="config-card">
+                <!-- Tab Bar -->
+                <div class="tab-bar" id="tab-bar">
+                    <button class="tab active" data-mode="prefix" onclick="setMode('prefix')">
+                        <span class="tab-icon">✨</span>
+                        <span class="tab-label">单词模式</span>
+                        <span class="tab-desc">前缀+单词+后缀 / @=无</span>
+                    </button>
+                    <button class="tab" data-mode="brute" onclick="setMode('brute')">
+                        <span class="tab-icon">🔢</span>
+                        <span class="tab-label">暴力扫描</span>
+                        <span class="tab-desc">全部字母组合</span>
+                    </button>
+                </div>
 
             <!-- TLD Pills (shared) -->
             <div class="form-section">
@@ -1323,8 +1645,20 @@
             </div>
 
             <div class="results-grid" id="results-grid"></div>
-        </div>
-    </div>
+
+            <div class="pagination-bar" id="pagination-bar">
+                <button class="page-btn" id="page-prev" onclick="gotoPage(currentPage - 1)">‹ 上一页</button>
+                <span class="page-info">
+                    <span id="page-current">1</span>
+                    <span>/</span>
+                    <span id="page-total">1</span>
+                </span>
+                <button class="page-btn" id="page-next" onclick="gotoPage(currentPage + 1)">下一页 ›</button>
+            </div>
+        </div>  <!-- /results-area -->
+        </div>  <!-- /main-content -->
+        </div>  <!-- /content-row -->
+    </div>  <!-- /container -->
 
     <!-- ====== SVG Gradient defs (hidden) ====== -->
     <svg width="0" height="0" style="position:absolute">
@@ -1350,6 +1684,10 @@
         let lastChecked = 0;
         let lastCheckTime = 0;
         let totalDomains = 0;
+
+        // Pagination
+        const PAGE_SIZE = 100;
+        let currentPage = 1;
 
         // ================================================================
         // DOM REFS
@@ -1419,6 +1757,8 @@
             checkActiveScan();
             loadWordMeta();
             setMode('prefix');
+            // Load history shortly after page load (sidebar always visible)
+            setTimeout(loadHistory, 300);
 
             // Focus prefix/suffix input on Enter
             $('prefix').addEventListener('keydown', (e) => {
@@ -1673,6 +2013,12 @@
                 scanStartTime = Date.now();
                 lastChecked = 0;
                 lastCheckTime = Date.now();
+
+                // Show incremental banner if applicable
+                if (data.incremental && data.skipped > 0) {
+                    showIncrementalBanner(data.skipped, data.full_count, data.total);
+                }
+
                 connectSSE(currentScanId, data.total);
             } catch (err) {
                 showToast('error', '启动失败: ' + err.message);
@@ -1762,11 +2108,9 @@
                 $('stat-found').textContent = data.available_count || foundDomains.length;
                 $('results-count').textContent = `${data.available_count || foundDomains.length}`;
 
-                // Update domain card statuses
-                document.querySelectorAll('.domain-status.just-found').forEach(el => {
-                    el.className = 'domain-status available';
-                    el.textContent = '可注册';
-                });
+                // Switch to paginated view
+                currentPage = 1;
+                renderCurrentPage();
 
                 saveToLocalStorage(foundDomains);
                 finishScan();
@@ -1797,7 +2141,7 @@
         }
 
         // ================================================================
-        // ADD FOUND DOMAIN
+        // ADD FOUND DOMAIN (live scan — append card directly)
         // ================================================================
         function addFoundDomain(domain) {
             foundDomains.push(domain);
@@ -1811,7 +2155,6 @@
             card.dataset.domain = domain;
             card.dataset.length = len;
             card.dataset.name = name;
-            card.style.animationDelay = '0ms';
             card.innerHTML = `
                 <div class="domain-card-main">
                     <span class="domain-name">${domain}</span>
@@ -1829,46 +2172,73 @@
             `;
             $('results-grid').appendChild(card);
 
-            // Scroll to bottom
-            $('results-grid').scrollTop = $('results-grid').scrollHeight;
-
             $('results-empty').classList.remove('visible');
             $('results-count').textContent = `${foundDomains.length}`;
-
-            // Apply current filter
-            filterResults();
         }
 
         // ================================================================
-        // RENDER ALL RESULTS (for restore)
+        // PAGINATION — getFilteredDomains, renderCurrentPage, gotoPage
         // ================================================================
-        function renderAllResults(domains, isLive = false) {
-            $('results-area').classList.add('visible');
-            $('scanning-hint').classList.remove('visible');
+        function getFilteredDomains() {
+            const query = $('results-filter').value.toLowerCase().trim();
+            let list = foundDomains;
+            if (query) {
+                list = list.filter(d => d.toLowerCase().includes(query));
+            }
+            if (currentSort === 'name') {
+                list = list.slice().sort((a, b) => a.localeCompare(b));
+            } else if (currentSort === 'length') {
+                list = list.slice().sort((a, b) => {
+                    const la = a.split('.')[0].length;
+                    const lb = b.split('.')[0].length;
+                    return la - lb || a.localeCompare(b);
+                });
+            }
+            return list;
+        }
 
+        function renderCurrentPage() {
             const grid = $('results-grid');
-            grid.innerHTML = '';
-            foundDomains = domains.slice();
+            const pBar = $('pagination-bar');
+            const total = foundDomains.length;
 
-            if (!domains || domains.length === 0) {
+            if (total === 0) {
+                grid.innerHTML = '';
+                pBar.classList.remove('visible');
                 $('results-empty').classList.add('visible');
+                $('results-count').textContent = '0';
                 return;
             }
-
             $('results-empty').classList.remove('visible');
+            $('results-count').textContent = `${total}`;
 
-            domains.forEach((domain, i) => {
+            const filtered = getFilteredDomains();
+            const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = Math.min(start + PAGE_SIZE, filtered.length);
+            const pageItems = filtered.slice(start, end);
+
+            // Update pagination UI
+            $('page-current').textContent = currentPage;
+            $('page-total').textContent = totalPages;
+            $('page-prev').disabled = currentPage <= 1;
+            $('page-next').disabled = currentPage >= totalPages;
+            pBar.classList.toggle('visible', totalPages > 1);
+
+            // Rebuild grid — use DocumentFragment for performance
+            const fragment = document.createDocumentFragment();
+            pageItems.forEach(domain => {
                 const parts = domain.split('.');
                 const name = parts[0];
                 const tld = parts.slice(1).join('.');
                 const len = name.length;
-
                 const card = document.createElement('div');
                 card.className = 'domain-card';
                 card.dataset.domain = domain;
                 card.dataset.length = len;
                 card.dataset.name = name;
-                card.style.animationDelay = `${i * 40}ms`;
                 card.innerHTML = `
                     <div class="domain-card-main">
                         <span class="domain-name">${domain}</span>
@@ -1884,44 +2254,66 @@
                         </button>
                     </div>
                 `;
-                grid.appendChild(card);
+                fragment.appendChild(card);
             });
+            grid.innerHTML = '';
+            grid.appendChild(fragment);
 
-            $('results-count').textContent = `${domains.length}`;
+            // Scroll to top when page changes
+            grid.scrollTop = 0;
+        }
+
+        function gotoPage(n) {
+            const filtered = getFilteredDomains();
+            const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+            if (n < 1 || n > totalPages || n === currentPage) return;
+            currentPage = n;
+            renderCurrentPage();
+        }
+
+        // ================================================================
+        // RENDER ALL RESULTS (for restore)
+        // ================================================================
+        function renderAllResults(domains, isLive = false) {
+            $('results-area').classList.add('visible');
+            $('scanning-hint').classList.remove('visible');
+
+            foundDomains = domains.slice();
+            currentPage = 1;
+
+            if (!domains || domains.length === 0) {
+                $('results-empty').classList.add('visible');
+                $('pagination-bar').classList.remove('visible');
+                $('results-grid').innerHTML = '';
+                $('results-count').textContent = '0';
+                return;
+            }
+
+            $('results-empty').classList.remove('visible');
             $('results-filter').value = '';
             $('filter-clear').classList.remove('visible');
             currentSort = 'default';
             document.querySelectorAll('.btn-sort').forEach(b => b.classList.remove('active'));
             document.querySelector('[data-sort="default"]').classList.add('active');
+
+            renderCurrentPage();
         }
 
         // ================================================================
         // FILTER & SORT
         // ================================================================
         function filterResults() {
-            const query = $('results-filter').value.toLowerCase().trim();
+            currentPage = 1;
             const clearBtn = $('filter-clear');
-            const grid = $('results-grid');
-            const cards = grid.querySelectorAll('.domain-card');
-            let visibleCount = 0;
-
-            cards.forEach(card => {
-                const domain = (card.dataset.domain || '').toLowerCase();
-                if (!query || domain.includes(query)) {
-                    card.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    card.classList.add('hidden');
-                }
-            });
-
-            clearBtn.classList.toggle('visible', query.length > 0);
-            $('results-count').textContent = `${visibleCount}`;
+            clearBtn.classList.toggle('visible', $('results-filter').value.length > 0);
+            renderCurrentPage();
         }
 
         function clearFilter() {
             $('results-filter').value = '';
-            filterResults();
+            $('filter-clear').classList.remove('visible');
+            currentPage = 1;
+            renderCurrentPage();
             $('results-filter').focus();
         }
 
@@ -1929,30 +2321,8 @@
             currentSort = type;
             document.querySelectorAll('.btn-sort').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            applySort();
-        }
-
-        function applySort() {
-            const grid = $('results-grid');
-            const cards = Array.from(grid.querySelectorAll('.domain-card'));
-
-            cards.sort((a, b) => {
-                if (currentSort === 'name') {
-                    return (a.dataset.name || '').localeCompare(b.dataset.name || '');
-                } else if (currentSort === 'length') {
-                    return parseInt(a.dataset.length || 0) - parseInt(b.dataset.length || 0);
-                }
-                // default: keep DOM order (found order)
-                return 0;
-            });
-
-            cards.forEach((card, i) => {
-                card.style.animationDelay = `${i * 30}ms`;
-                card.style.animation = 'none';
-                card.offsetHeight; // reflow
-                card.style.animation = '';
-                grid.appendChild(card);
-            });
+            currentPage = 1;
+            renderCurrentPage();
         }
 
         // ================================================================
@@ -1984,14 +2354,13 @@
         }
 
         async function copyAllDomains() {
-            const visibleDomains = Array.from($('results-grid').querySelectorAll('.domain-card:not(.hidden)'))
-                .map(c => c.dataset.domain);
-            if (visibleDomains.length === 0) {
+            const list = getFilteredDomains();
+            if (list.length === 0) {
                 showToast('info', '没有可复制的域名');
                 return;
             }
             try {
-                const text = visibleDomains.join('\n');
+                const text = list.join('\n');
                 if (navigator.clipboard && window.isSecureContext) {
                     await navigator.clipboard.writeText(text);
                 } else {
@@ -2004,16 +2373,15 @@
                     document.execCommand('copy');
                     ta.remove();
                 }
-                showToast('success', `已复制 ${visibleDomains.length} 个域名`, 2500);
+                showToast('success', `已复制 ${list.length} 个域名`, 2500);
             } catch (err) {
                 showToast('error', '复制失败');
             }
         }
 
         function exportResults() {
-            const visibleDomains = Array.from($('results-grid').querySelectorAll('.domain-card:not(.hidden)'))
-                .map(c => c.dataset.domain);
-            if (visibleDomains.length === 0) {
+            const list = getFilteredDomains();
+            if (list.length === 0) {
                 showToast('info', '没有可导出的域名');
                 return;
             }
@@ -2041,14 +2409,14 @@
                     .map(cb => cb.value).sort();
                 label = checked.length ? checked.join('-') + '字母' : '自定义';
             }
-            const blob = new Blob([visibleDomains.join('\n')], { type: 'text/plain' });
+            const blob = new Blob([list.join('\n')], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `${label}.${tld}_${new Date().toISOString().slice(0,10)}.txt`;
             a.click();
             URL.revokeObjectURL(url);
-            showToast('success', `已导出 ${visibleDomains.length} 个域名`, 2000);
+            showToast('success', `已导出 ${list.length} 个域名`, 2000);
         }
 
         // ================================================================
@@ -2133,6 +2501,200 @@
             $('btn-start').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> 开始扫描';
             $('btn-cancel').classList.add('hidden');
             scanningActive = false;
+        }
+
+        // ================================================================
+        // INCREMENTAL RECHECK BANNER
+        // ================================================================
+        function showIncrementalBanner(skipped, fullCount, recheckCount) {
+            const banner = $('incremental-banner');
+            const text = $('incremental-text');
+            const pct = fullCount > 0 ? Math.round(skipped / fullCount * 100) : 0;
+            text.textContent = `⚡ 增量复检：跳过 ${skipped} 个已知注册域名（${pct}%），仅复检 ${recheckCount} 个`;
+            banner.classList.add('visible');
+            // auto dismiss after 12s
+            clearTimeout(banner._timer);
+            banner._timer = setTimeout(() => banner.classList.remove('visible'), 12000);
+        }
+        
+        // ================================================================
+        // HISTORY MODAL
+        // ================================================================
+        
+        async function loadHistory() {
+            const listEl = $('history-list');
+            const emptyEl = $('history-empty');
+            const detailEl = $('history-detail');
+            listEl.innerHTML = '';
+            detailEl.className = 'history-detail';
+            detailEl.innerHTML = '';
+
+            try {
+                const resp = await fetch('/history');
+                const data = await resp.json();
+                const items = data.items || [];
+
+                $('history-count').textContent = `${items.length}`;
+
+                if (items.length === 0) {
+                    emptyEl.style.display = 'block';
+                    listEl.style.display = 'none';
+                    return;
+                }
+                emptyEl.style.display = 'none';
+                listEl.style.display = 'block';
+
+                const fmtTime = (ts) => {
+                    if (!ts) return '';
+                    const d = new Date(ts * 1000);
+                    const now = new Date();
+                    const diffMs = now - d;
+                    const diffMin = Math.floor(diffMs / 60000);
+                    if (diffMin < 1) return '刚刚';
+                    if (diffMin < 60) return `${diffMin} 分钟前`;
+                    const diffH = Math.floor(diffMin / 60);
+                    if (diffH < 24) return `${diffH} 小时前`;
+                    const diffD = Math.floor(diffH / 24);
+                    if (diffD < 30) return `${diffD} 天前`;
+                    return d.toLocaleDateString('zh-CN');
+                };
+
+                items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'history-item';
+                    el.onclick = (e) => {
+                        // Don't trigger if clicking delete button
+                        if (e.target.closest('.history-item-delete')) return;
+                        toggleHistoryDetail(item.id);
+                    };
+                    const modeLabel = item.mode === 'prefix_word' ? '单词' : '暴力';
+                    const modeClass = item.mode === 'prefix_word' ? 'prefix' : 'brute';
+                    el.innerHTML = `
+                        <div class="history-item-main">
+                            <div class="history-item-title">${escapeHtml(item.summary || '未知查询')}</div>
+                            <div class="history-item-meta">
+                                <span class="hi-tag ${modeClass}">${modeLabel}</span>
+                                <span>${item.total || 0} 候选</span>
+                                <span>${fmtTime(item.updated_at || item.created_at)}</span>
+                            </div>
+                        </div>
+                        <div class="history-item-right">
+                            <div class="history-item-stat">
+                                <span class="hi-count">${item.available_count ?? 0}</span>
+                                <span>可注册</span>
+                            </div>
+                            <button class="history-item-delete" title="删除" onclick="event.stopPropagation();deleteHistoryItem(${item.id})">🗑</button>
+                        </div>
+                    `;
+                    listEl.appendChild(el);
+                });
+            } catch (err) {
+                listEl.innerHTML = '';
+                emptyEl.style.display = 'block';
+                emptyEl.querySelector('p').textContent = '加载失败: ' + err.message;
+            }
+        }
+
+        async function toggleHistoryDetail(id) {
+            const detailEl = $('history-detail');
+            // If already open for this ID, close
+            if (detailEl.dataset.activeId === String(id) && detailEl.classList.contains('open')) {
+                detailEl.className = 'history-detail';
+                detailEl.innerHTML = '';
+                delete detailEl.dataset.activeId;
+                return;
+            }
+
+            detailEl.className = 'history-detail';
+            detailEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);">⏳ 加载中...</div>';
+            detailEl.classList.add('open');
+            detailEl.dataset.activeId = String(id);
+
+            try {
+                const resp = await fetch(`/history/${id}`);
+                const rec = await resp.json();
+                if (rec.error) {
+                    detailEl.innerHTML = `<div style="color:var(--error);padding:8px;">${rec.error}</div>`;
+                    return;
+                }
+                const avail = rec.available_list || [];
+                const tld = rec.tld || '';
+                const fmtTime = (ts) => {
+                    if (!ts) return '';
+                    return new Date(ts * 1000).toLocaleString('zh-CN');
+                };
+                detailEl.innerHTML = `
+                    <div class="history-detail-header">
+                        <span>${escapeHtml(rec.summary || '')}</span>
+                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();copyAllFromHistory(${id})">📋 复制全部</button>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
+                        ${rec.total || 0} 候选 → ${avail.length} 可注册
+                        &nbsp;·&nbsp; ${fmtTime(rec.updated_at || rec.created_at)}
+                    </div>
+                    <div class="hi-available-list">
+                        ${avail.length === 0 ? '<span style="color:var(--text-muted);background:transparent;">无</span>' :
+                            avail.map(d => `<span>${escapeHtml(d)}</span>`).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                detailEl.innerHTML = `<div style="color:var(--error);padding:8px;">加载失败: ${err.message}</div>`;
+            }
+        }
+
+        async function deleteHistoryItem(id) {
+            if (!confirm('确定删除这条历史记录？')) return;
+            try {
+                const resp = await fetch(`/history/delete/${id}`, { method: 'POST' });
+                if (resp.ok) {
+                    showToast('success', '已删除', 2000);
+                    // Close detail if open
+                    const detailEl = $('history-detail');
+                    detailEl.className = 'history-detail';
+                    detailEl.innerHTML = '';
+                    delete detailEl.dataset.activeId;
+                    // Reload
+                    await loadHistory();
+                } else {
+                    showToast('error', '删除失败');
+                }
+            } catch (err) {
+                showToast('error', '删除失败: ' + err.message);
+            }
+        }
+
+        async function copyAllFromHistory(id) {
+            try {
+                const resp = await fetch(`/history/${id}`);
+                const rec = await resp.json();
+                const avail = rec.available_list || [];
+                if (avail.length === 0) {
+                    showToast('info', '没有可复制的域名');
+                    return;
+                }
+                const text = avail.join('\n');
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                }
+                showToast('success', `已复制 ${avail.length} 个域名`, 2500);
+            } catch (err) {
+                showToast('error', '复制失败');
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
 
         // ================================================================

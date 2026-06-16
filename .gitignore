@@ -11,6 +11,7 @@ dist/
 # Scan results (personal data)
 last_scan_result.json
 *.csv
+history.db
 
 # OS
 .DS_Store

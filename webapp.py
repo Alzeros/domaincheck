@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from checkers import check_domain
 from config import Config
 from generators import generate_all
+import history
 
 # ── 全局状态 ──────────────────────────────────────────────
 # scan_id → { queue, domains, results, config, cancelled, ... }
@@ -28,6 +29,7 @@ LAST_SCAN_FILE = Path("last_scan_result.json")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scans.clear()
+    history.init_db()  # 建表(幂等)
     yield
 
 
@@ -110,8 +112,10 @@ async def start_scan(data: dict):
         else:
             print(f"[扫描] 单词模式: {len(words)} 个 {word_length}字母单词 → {tld}")
 
+        cfg = Config(tld=tld, concurrency=10, batch_sleep=1.0, timeout=20)
+
     else:
-        # 暴力扫描模式（原来的逻辑）
+        # 暴力扫描模式
         lengths = data.get("lengths", [2])
         cfg = Config(
             tld=tld,
@@ -124,12 +128,46 @@ async def start_scan(data: dict):
         )
         domains = generate_all(cfg)
 
-    # 两种模式都需要 cfg
-    if "cfg" not in locals() or cfg is None:
-        cfg = Config(tld=tld, concurrency=10, batch_sleep=1.0, timeout=20)
-
     if not domains:
         return JSONResponse({"error": "没有生成候选域名"}, status_code=400)
+
+    # ── 计算查询参数指纹,用于增量复检 ──
+    if mode == "prefix_word":
+        params = {
+            "tld": tld,
+            "prefix": data.get("prefix", "x"),
+            "suffix": data.get("suffix", "@"),
+            "word_length": word_length,
+            "only_common": only_common,
+        }
+    else:
+        params = {
+            "tld": tld,
+            "lengths": data.get("lengths", [2]),
+            "use_digits": use_digits,
+        }
+    query_key = history.make_query_key(mode, params)
+    full_count = len(domains)   # 全量候选数(归档用)
+    incremental = False         # 是否命中增量复检
+    skipped = 0                 # 跳过了多少已知注册域名
+
+    # ── 增量复检:命中历史时只复检"上次可注册"的域名子集 ──
+    try:
+        prev = await history.find_by_key(query_key)
+        if prev and prev["available_list"]:
+            prev_available = prev["available_list"]
+            # 与本次候选取交集(候选变了的话,只复检交集)
+            domain_set = set(domains)
+            recheck = [d for d in prev_available if d in domain_set]
+            if recheck:
+                skipped = len(domains) - len(recheck)
+                # 只有真正减少了工作量才走增量
+                if skipped > 0:
+                    domains = recheck
+                    incremental = True
+                    print(f"[增量] 命中历史 {query_key}:跳过 {skipped} 个已知注册域名,复检 {len(recheck)} 个")
+    except Exception as e:
+        print(f"[增量] 查询历史失败(忽略,走全量):{e}")
 
     _scan_counter += 1
     scan_id = uuid.uuid4().hex[:12]
@@ -143,6 +181,13 @@ async def start_scan(data: dict):
         "cancelled": False,
         "started_at": start_ts,
         "checked": 0,
+        # 归档用元数据(扫描完成后写历史)
+        "query_key": query_key,
+        "mode": mode,
+        "params": params,
+        "full_count": full_count,
+        "incremental": incremental,
+        "skipped": skipped,
     }
 
     asyncio.create_task(_run_scan(scan_id))
@@ -151,6 +196,9 @@ async def start_scan(data: dict):
         "scan_id": scan_id,
         "total": len(domains),
         "tld": tld,
+        "incremental": incremental,
+        "skipped": skipped,
+        "full_count": full_count,
     }
     if mode == "prefix_word":
         resp["mode"] = "prefix_word"
@@ -178,7 +226,14 @@ async def scan_events(scan_id: str, request: Request):
         # 先发一个快照事件
         checked = scan.get("checked", 0)
         total = len(scan["domains"])
-        yield f"event: snapshot\ndata: {json.dumps({'checked': checked, 'total': total})}\n\n"
+        snapshot = {
+            'checked': checked,
+            'total': total,
+            'incremental': scan.get('incremental', False),
+            'skipped': scan.get('skipped', 0),
+            'full_count': scan.get('full_count', total),
+        }
+        yield f"event: snapshot\ndata: {json.dumps(snapshot)}\n\n"
 
         # 如果扫描已完成，直接发完成事件
         if is_done:
@@ -311,6 +366,59 @@ async def get_last_scan():
     return {"domains": [], "tld": "", "count": 0}
 
 
+# ── 历史记录(SQLite) ────────────────────────────────────
+
+def _params_summary(rec: dict) -> str:
+    """把查询参数转成一句话摘要,供历史列表展示。"""
+    mode = rec.get("mode", "brute")
+    tld = rec.get("tld", "")
+    p = rec.get("params", {}) or {}
+    if mode == "prefix_word":
+        prefix = p.get("prefix", "")
+        suffix = p.get("suffix", "")
+        wl = p.get("word_length", "")
+        parts = []
+        if prefix and prefix != "@":
+            parts.append(f"前缀 {prefix}")
+        parts.append(f"{wl} 字母单词")
+        if suffix and suffix != "@":
+            parts.append(f"后缀 {suffix}")
+        return f"{', '.join(parts)} → .{tld}"
+    lengths = p.get("lengths", [])
+    digits = " +数字" if p.get("use_digits") else ""
+    lengths_str = "/".join(str(x) for x in lengths) if lengths else "?"
+    return f"暴力 {lengths_str} 字母{digits} → .{tld}"
+
+
+@app.get("/history")
+async def list_history(limit: int = 100):
+    """历史列表(最近 N 条,不含完整域名列表)。"""
+    rows = await history.list_recent(limit)
+    for r in rows:
+        r["summary"] = _params_summary(r)
+        r["updated_at"] = r.get("updated_at", 0)
+        r["created_at"] = r.get("created_at", 0)
+    return {"items": rows, "count": len(rows)}
+
+
+@app.get("/history/{scan_db_id}")
+async def get_history_detail(scan_db_id: int):
+    """单条历史详情(含完整可注册域名列表)。"""
+    rec = await history.get_by_id(scan_db_id)
+    if rec is None:
+        return JSONResponse({"error": "历史记录不存在"}, status_code=404)
+    rec["summary"] = _params_summary(rec)
+    return rec
+
+
+@app.post("/history/delete/{scan_db_id}")
+async def delete_history(scan_db_id: int):
+    ok = await history.delete_scan(scan_db_id)
+    if not ok:
+        return JSONResponse({"error": "历史记录不存在"}, status_code=404)
+    return {"status": "deleted"}
+
+
 # ── 扫描后台任务 ──────────────────────────────────────────
 
 async def _run_scan(scan_id: str):
@@ -414,6 +522,21 @@ async def _run_scan(scan_id: str):
 
         available_list = [d for d, ok in results if ok]
         _save_last_scan(cfg.tld, available_list, time.time())
+
+        # ── 写入/更新历史(SQLite) ──
+        # 增量扫描时 available_list 是复检后仍可注册的子集,直接归档(更精确)。
+        try:
+            await history.save_scan(
+                query_key=scan.get("query_key", ""),
+                tld=cfg.tld,
+                mode=scan.get("mode", "brute"),
+                params=scan.get("params", {}),
+                total=scan.get("full_count", total),  # 记全量候选数,而非增量后的
+                available=available_list,
+            )
+        except Exception as e:
+            print(f"[历史] 写入失败(忽略):{e}")
+
         await queue.put({
             "type": "done",
             "data": {
@@ -422,6 +545,8 @@ async def _run_scan(scan_id: str):
                 "elapsed": round(elapsed, 1),
                 "whois_queried": whois_queried,
                 "rate_limited": rate_limited_count,
+                "incremental": scan.get("incremental", False),
+                "skipped": scan.get("skipped", 0),
             },
         })
     except Exception as e:
