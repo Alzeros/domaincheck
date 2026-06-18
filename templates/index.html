@@ -1453,9 +1453,76 @@
             .page-btn { min-width: 28px; height: 28px; font-size: 12px; padding: 0 8px; }
             .page-info { font-size: 12px; }
         }
+
+        /* ================================================================
+           LOGIN OVERLAY
+           ================================================================ */
+        .login-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-overlay.visible { display: flex; }
+
+        .login-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-xl);
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+        .login-box h2 {
+            font-family: 'Space Grotesk', var(--font-sans);
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff 0%, #00e5ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        [data-theme="light"] .login-box h2 {
+            background: linear-gradient(135deg, #1e293b 0%, #0891b2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        .login-box p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        .login-box .input-field {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .login-error {
+            font-size: 13px;
+            color: var(--error);
+            margin-bottom: 12px;
+            display: none;
+        }
+        .login-error.visible { display: block; }
     </style>
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-box">
+            <h2>🔒 DomainChecker</h2>
+            <p>请输入访问密码</p>
+            <div class="login-error" id="login-error">密码错误</div>
+            <input type="password" id="login-password" class="input-field" placeholder="密码" autocomplete="current-password">
+            <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">确认</button>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
@@ -1838,31 +1905,108 @@
         // ================================================================
         // INIT
         // ================================================================
-        window.addEventListener('DOMContentLoaded', () => {
+        // ================================================================
+        // AUTH
+        // ================================================================
+        let authToken = localStorage.getItem('dc-token') || '';
+
+        function authFetch(url, options = {}) {
+            if (authToken) {
+                options.headers = options.headers || {};
+                if (options.headers instanceof Headers) {
+                    options.headers.set('Authorization', `Bearer ${authToken}`);
+                } else {
+                    options.headers['Authorization'] = `Bearer ${authToken}`;
+                }
+            }
+            return fetch(url, options);
+        }
+
+        async function doLogin() {
+            const pw = $('login-password').value;
+            if (!pw) return;
+            try {
+                const resp = await fetch('/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pw }),
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    authToken = data.token || '';
+                    if (authToken) localStorage.setItem('dc-token', authToken);
+                    $('login-overlay').classList.remove('visible');
+                    initApp();
+                } else {
+                    $('login-error').textContent = data.error || '密码错误';
+                    $('login-error').classList.add('visible');
+                }
+            } catch (err) {
+                $('login-error').textContent = '连接失败';
+                $('login-error').classList.add('visible');
+            }
+        }
+
+        // Enter key on password input
+        document.addEventListener('DOMContentLoaded', () => {
+            $('login-password').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') doLogin();
+            });
+        });
+
+        async function checkAuth() {
+            try {
+                const resp = await fetch('/auth/check');
+                const data = await resp.json();
+                if (!data.need_auth) {
+                    initApp();
+                    return;
+                }
+                // Need auth — check if stored token is valid
+                if (authToken) {
+                    const test = await authFetch('/history?limit=1');
+                    if (test.ok) {
+                        initApp();
+                        return;
+                    }
+                    // Token expired
+                    authToken = '';
+                    localStorage.removeItem('dc-token');
+                }
+                // Show login
+                $('login-overlay').classList.add('visible');
+                $('login-password').focus();
+            } catch (err) {
+                // Server unreachable, show login
+                $('login-overlay').classList.add('visible');
+            }
+        }
+
+        function initApp() {
             initTheme();
             restoreLastResults();
             restoreLastResultsFromServer();
             checkActiveScan();
             loadWordMeta();
             setMode('prefix');
-            // Load history shortly after page load (sidebar always visible)
             setTimeout(loadHistory, 300);
 
-            // Focus prefix/suffix input on Enter
             $('prefix').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !scanningActive) startScan();
             });
             $('suffix').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !scanningActive) startScan();
             });
-        });
+        }
+
+        window.addEventListener('DOMContentLoaded', checkAuth);
 
         // ================================================================
         // WORD META
         // ================================================================
         async function loadWordMeta() {
             try {
-                const resp = await fetch('/words-meta');
+                const resp = await authFetch('/words-meta');
                 const data = await resp.json();
                 const updateInfo = () => {
                     const len = $('word-length').value;
@@ -1933,7 +2077,7 @@
         // ================================================================
         async function checkActiveScan() {
             try {
-                const resp = await fetch('/scan/active');
+                const resp = await authFetch('/scan/active');
                 const data = await resp.json();
                 if (!data.scan_id) return;
 
@@ -1966,7 +2110,7 @@
             $('btn-start').innerHTML = '⏳ 扫描中...';
             $('btn-cancel').classList.remove('hidden');
 
-            const resp = await fetch(`/scan/results/${currentScanId}`);
+            const resp = await authFetch(`/scan/results/${currentScanId}`);
             const state = await resp.json();
             if (state.available && state.available.length > 0) {
                 for (const d of state.available) addFoundDomain(d);
@@ -1983,7 +2127,7 @@
             try {
                 if ($('restore-banner').classList.contains('visible')) return;
 
-                const resp = await fetch('/scan/last');
+                const resp = await authFetch('/scan/last');
                 const data = await resp.json();
                 if (!data.domains || data.domains.length === 0) return;
 
@@ -2085,7 +2229,7 @@
             updateConnStatus('connected');
 
             try {
-                const resp = await fetch('/scan', {
+                const resp = await authFetch('/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cfg),
@@ -2573,7 +2717,7 @@
         async function cancelScan() {
             if (!currentScanId) return;
             try {
-                await fetch(`/scan/cancel/${currentScanId}`, { method: 'POST' });
+                await authFetch(`/scan/cancel/${currentScanId}`, { method: 'POST' });
                 if (eventSource) { eventSource.close(); eventSource = null; }
                 showToast('warning', '正在停止扫描...');
             } catch (err) {
@@ -2615,7 +2759,7 @@
             listEl.innerHTML = '';
 
             try {
-                const resp = await fetch('/history');
+                const resp = await authFetch('/history');
                 const data = await resp.json();
                 const items = data.items || [];
 
@@ -2716,7 +2860,7 @@
             detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
             try {
-                const resp = await fetch(`/history/${id}`);
+                const resp = await authFetch(`/history/${id}`);
                 const rec = await resp.json();
                 if (rec.error) {
                     detailEl.innerHTML = `<div style="color:var(--error);padding:8px;">${rec.error}</div>`;
@@ -2750,7 +2894,7 @@
         async function deleteHistoryItem(id) {
             if (!confirm('确定删除这条历史记录？')) return;
             try {
-                const resp = await fetch(`/history/delete/${id}`, { method: 'POST' });
+                const resp = await authFetch(`/history/delete/${id}`, { method: 'POST' });
                 if (resp.ok) {
                     showToast('success', '已删除', 2000);
                     await loadHistory();
@@ -2764,7 +2908,7 @@
 
         async function copyAllFromHistory(id) {
             try {
-                const resp = await fetch(`/history/${id}`);
+                const resp = await authFetch(`/history/${id}`);
                 const rec = await resp.json();
                 const avail = rec.available_list || [];
                 if (avail.length === 0) {

@@ -3,6 +3,7 @@
 
 import asyncio
 import json
+import os
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -17,6 +18,20 @@ from checkers import check_domain
 from config import Config
 from generators import generate_all
 import history
+
+# ── 访问密码 ─────────────────────────────────────────────
+DC_PASSWORD = os.environ.get("DC_PASSWORD", "")
+_valid_tokens: set[str] = set()
+
+
+def _check_token(request: Request) -> bool:
+    """校验请求中的 token 是否有效。无密码配置时放行。"""
+    if not DC_PASSWORD:
+        return True  # 未设密码则不校验
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:] in _valid_tokens
+    return False
 
 # ── 全局状态 ──────────────────────────────────────────────
 # scan_id → { queue, domains, results, config, cancelled, ... }
@@ -34,6 +49,17 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Domain Checker", lifespan=lifespan)
+
+# 公开路由（无需 token）
+_PUBLIC_PATHS = {"/", "/auth/check", "/verify"}
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if DC_PASSWORD and request.url.path not in _PUBLIC_PATHS:
+        if not _check_token(request):
+            return JSONResponse({"error": "未授权，请先验证密码"}, status_code=401)
+    return await call_next(request)
 
 
 def _save_last_scan(tld: str, domains: list[str], timestamp: float):
@@ -55,6 +81,27 @@ def _save_last_scan(tld: str, domains: list[str], timestamp: float):
 async def index():
     html = Path("templates/index.html").read_text(encoding="utf-8")
     return HTMLResponse(html)
+
+
+# ── 认证 ─────────────────────────────────────────────────
+
+@app.get("/auth/check")
+async def auth_check():
+    """前端查询是否需要密码认证。"""
+    return {"need_auth": bool(DC_PASSWORD)}
+
+
+@app.post("/verify")
+async def verify_password(data: dict):
+    """校验密码，返回 token。"""
+    if not DC_PASSWORD:
+        return {"token": "", "ok": True}  # 未设密码直接通过
+    password = data.get("password", "")
+    if password == DC_PASSWORD:
+        token = uuid.uuid4().hex
+        _valid_tokens.add(token)
+        return {"token": token, "ok": True}
+    return JSONResponse({"ok": False, "error": "密码错误"}, status_code=401)
 
 
 # ── 单词表缓存 ──────────────────────────────────────────
