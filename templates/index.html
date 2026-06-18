@@ -401,6 +401,20 @@
             border-color: rgba(255,255,255,0.15);
             background: var(--bg-card-hover);
         }
+        .history-item.collapsed {
+            opacity: 0.4;
+            padding: 8px 12px;
+            border-color: transparent;
+            background: transparent;
+        }
+        .history-item.collapsed:hover {
+            opacity: 0.7;
+            background: var(--bg-card);
+        }
+        .history-item.collapsed .history-item-meta,
+        .history-item.collapsed .history-item-right {
+            display: none;
+        }
 
         .history-item-main {
             display: flex;
@@ -1505,7 +1519,6 @@
                         <p>还没有扫描记录</p>
                     </div>
                     <div id="history-list"></div>
-                    <div class="history-detail" id="history-detail"></div>
                 </div>
             </aside>
 
@@ -2599,10 +2612,7 @@
         async function loadHistory() {
             const listEl = $('history-list');
             const emptyEl = $('history-empty');
-            const detailEl = $('history-detail');
             listEl.innerHTML = '';
-            detailEl.className = 'history-detail';
-            detailEl.innerHTML = '';
 
             try {
                 const resp = await fetch('/history');
@@ -2635,15 +2645,17 @@
                 };
 
                 items.forEach(item => {
+                    const modeLabel = item.mode === 'prefix_word' ? '单词' : '暴力';
+                    const modeClass = item.mode === 'prefix_word' ? 'prefix' : 'brute';
+
+                    // History item row
                     const el = document.createElement('div');
                     el.className = 'history-item';
+                    el.dataset.id = item.id;
                     el.onclick = (e) => {
-                        // Don't trigger if clicking delete button
                         if (e.target.closest('.history-item-delete')) return;
                         toggleHistoryDetail(item.id);
                     };
-                    const modeLabel = item.mode === 'prefix_word' ? '单词' : '暴力';
-                    const modeClass = item.mode === 'prefix_word' ? 'prefix' : 'brute';
                     el.innerHTML = `
                         <div class="history-item-main">
                             <div class="history-item-title">${escapeHtml(item.summary || '未知查询')}</div>
@@ -2662,6 +2674,12 @@
                         </div>
                     `;
                     listEl.appendChild(el);
+
+                    // Detail placeholder (hidden by default)
+                    const detail = document.createElement('div');
+                    detail.className = 'history-detail';
+                    detail.dataset.id = item.id;
+                    listEl.appendChild(detail);
                 });
             } catch (err) {
                 listEl.innerHTML = '';
@@ -2671,19 +2689,31 @@
         }
 
         async function toggleHistoryDetail(id) {
-            const detailEl = $('history-detail');
-            // If already open for this ID, close
-            if (detailEl.dataset.activeId === String(id) && detailEl.classList.contains('open')) {
-                detailEl.className = 'history-detail';
+            const listEl = $('history-list');
+            const detailEl = listEl.querySelector(`.history-detail[data-id="${id}"]`);
+            if (!detailEl) return;
+
+            // If already open — close it and un-collapse all
+            if (detailEl.classList.contains('open')) {
+                detailEl.classList.remove('open');
                 detailEl.innerHTML = '';
-                delete detailEl.dataset.activeId;
+                listEl.querySelectorAll('.history-item').forEach(el => el.classList.remove('collapsed'));
                 return;
             }
 
-            detailEl.className = 'history-detail';
-            detailEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);">⏳ 加载中...</div>';
+            // Close all other details, collapse all items
+            listEl.querySelectorAll('.history-detail.open').forEach(el => {
+                el.classList.remove('open');
+                el.innerHTML = '';
+            });
+            listEl.querySelectorAll('.history-item').forEach(el => el.classList.add('collapsed'));
+
+            // Open this detail, un-collapse its parent item
             detailEl.classList.add('open');
-            detailEl.dataset.activeId = String(id);
+            detailEl.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);">⏳ 加载中...</div>';
+            const parentItem = listEl.querySelector(`.history-item[data-id="${id}"]`);
+            if (parentItem) parentItem.classList.remove('collapsed');
+            detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
             try {
                 const resp = await fetch(`/history/${id}`);
@@ -2693,7 +2723,6 @@
                     return;
                 }
                 const avail = rec.available_list || [];
-                const tld = rec.tld || '';
                 const fmtTime = (ts) => {
                     if (!ts) return '';
                     return new Date(ts * 1000).toLocaleString('zh-CN');
@@ -2712,6 +2741,7 @@
                             avail.map(d => `<span>${escapeHtml(d)}</span>`).join('')}
                     </div>
                 `;
+                detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } catch (err) {
                 detailEl.innerHTML = `<div style="color:var(--error);padding:8px;">加载失败: ${err.message}</div>`;
             }
@@ -2723,12 +2753,6 @@
                 const resp = await fetch(`/history/delete/${id}`, { method: 'POST' });
                 if (resp.ok) {
                     showToast('success', '已删除', 2000);
-                    // Close detail if open
-                    const detailEl = $('history-detail');
-                    detailEl.className = 'history-detail';
-                    detailEl.innerHTML = '';
-                    delete detailEl.dataset.activeId;
-                    // Reload
                     await loadHistory();
                 } else {
                     showToast('error', '删除失败');
