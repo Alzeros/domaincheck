@@ -162,7 +162,8 @@ def _list_recent_sync(limit: int = 100) -> list[dict]:
             d = _row_to_dict(r)
             avail = d.pop("available_list")  # 丢弃完整列表
             d["available_count"] = len(avail)
-            d.pop("available_raw")
+            d.pop("available_raw", None)
+            d.pop("available", None)  # 丢弃原始 JSON 字符串
             out.append(d)
         return out
     finally:
