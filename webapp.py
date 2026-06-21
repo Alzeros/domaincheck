@@ -28,9 +28,15 @@ def _check_token(request: Request) -> bool:
     """校验请求中的 token 是否有效。无密码配置时放行。"""
     if not DC_PASSWORD:
         return True  # 未设密码则不校验
+    # Header: Authorization: Bearer xxx
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        return auth[7:] in _valid_tokens
+        if auth[7:] in _valid_tokens:
+            return True
+    # Query: ?token=xxx （EventSource 不支持自定义 header 的备选方案）
+    query_token = request.query_params.get("token", "")
+    if query_token and query_token in _valid_tokens:
+        return True
     return False
 
 # ── 全局状态 ──────────────────────────────────────────────

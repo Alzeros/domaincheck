@@ -2262,7 +2262,8 @@
         // SSE CONNECTION
         // ================================================================
         function connectSSE(scanId, total) {
-            eventSource = new EventSource(`/scan/events/${scanId}`);
+            const sseUrl = authToken ? `/scan/events/${scanId}?token=${authToken}` : `/scan/events/${scanId}`;
+            eventSource = new EventSource(sseUrl);
 
             eventSource.addEventListener('progress', (e) => {
                 const data = JSON.parse(e.data);
