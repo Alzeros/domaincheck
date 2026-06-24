@@ -13,6 +13,7 @@ from pathlib import Path
 import aiohttp
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.responses import StreamingResponse
 
 from checkers import check_domain
 from config import Config
@@ -243,7 +244,8 @@ async def start_scan(data: dict):
         "skipped": skipped,
     }
 
-    asyncio.create_task(_run_scan(scan_id))
+    scan_task = asyncio.create_task(_run_scan(scan_id))
+    scans[scan_id]["task"] = scan_task
 
     resp = {
         "scan_id": scan_id,
@@ -318,7 +320,6 @@ async def scan_events(scan_id: str, request: Request):
             if msg["type"] == "done" or msg["type"] == "error":
                 break
 
-    from starlette.responses import StreamingResponse
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
@@ -401,9 +402,15 @@ async def get_results(scan_id: str):
 @app.post("/scan/cancel/{scan_id}")
 async def cancel_scan(scan_id: str):
     scan = scans.get(scan_id)
-    if scan:
-        scan["cancelled"] = True
-    return {"status": "cancelled"}
+    if not scan:
+        return {"status": "gone"}  # 扫描已清理
+
+    already_finished = scan.get("finished", False)
+    if scan.get("cancelled", False):
+        return {"status": "already_cancelled", "finished": already_finished}
+
+    scan["cancelled"] = True
+    return {"status": "cancelled", "finished": already_finished}
 
 
 # ── 获取最新持久化结果 ──────────────────────────────────
@@ -522,6 +529,9 @@ async def _run_scan(scan_id: str):
             batch = domains[i : i + batch_size]
             tasks = [check_one(d) for d in batch]
             for coro in asyncio.as_completed(tasks):
+                # 逐个结果检查取消，避免批次内响应延迟
+                if scan["cancelled"]:
+                    break
                 domain, available, meta = await coro
                 checked += 1
                 results.append((domain, available))
