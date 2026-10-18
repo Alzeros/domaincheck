@@ -1540,7 +1540,7 @@
                         <span id="conn-text">就绪</span>
                     </div>
                     <div class="hero-badges">
-                        <span class="hero-badge"><span class="dot green"></span> 11 TLD</span>
+                        <span class="hero-badge"><span class="dot green"></span> 13 TLD</span>
                         <span class="hero-badge"><span class="dot blue"></span> DNS+RDAP+Whois</span>
                         <span class="hero-badge"><span class="dot cyan"></span> SSE</span>
                     </div>
@@ -1622,6 +1622,8 @@
                     <span class="pill" data-tld="top">.top</span>
                     <span class="pill" data-tld="vip">.vip</span>
                     <span class="pill" data-tld="me">.me</span>
+                    <span class="pill" data-tld="cv">.cv</span>
+                    <span class="pill" data-tld="tech">.tech</span>
                 </div>
                 <select id="tld" class="hidden">
                     <option value="de" selected>.de</option>
@@ -1635,6 +1637,8 @@
                     <option value="top">.top</option>
                     <option value="vip">.vip</option>
                     <option value="me">.me</option>
+                    <option value="cv">.cv</option>
+                    <option value="tech">.tech</option>
                 </select>
             </div>
 
@@ -2319,6 +2323,11 @@
             eventSource.addEventListener('ratelimit', (e) => {
                 const data = JSON.parse(e.data);
                 showToast('warning', `⚠️ 检测到限流，自动降速至每批间隔 ${data.sleep}s`, 3000);
+            });
+
+            eventSource.addEventListener('retry', (e) => {
+                const data = JSON.parse(e.data);
+                showToast('warning', `⚠️ ${data.count} 个域名因限流未能确认，等待 ${data.wait}s 后自动复检`, 5000);
             });
 
             eventSource.addEventListener('done', (e) => {
