@@ -50,6 +50,12 @@ LAST_SCAN_FILE = Path("last_scan_result.json")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 被动重启前,把内存里还没归档的扫描抢救进历史,避免成果随进程消失
+    for sid, s in scans.items():
+        if s.get("finished", False) or s.get("cancelled", False) or s.get("archived", False):
+            continue
+        s["archived"] = True
+        _archive_partial(s, s.get("results", []), "服务重启")
     scans.clear()
     history.init_db()  # 建表(幂等)
     yield
@@ -67,6 +73,36 @@ async def auth_middleware(request: Request, call_next):
         if not _check_token(request):
             return JSONResponse({"error": "未授权，请先验证密码"}, status_code=401)
     return await call_next(request)
+
+
+def _archive_partial(scan: dict, results: list, reason: str):
+    """把一场没跑完的扫描归档进历史(手动停止/异常中断/重启丢失)。
+
+    后端持有全部已检测结果,所以由后端兜底落库;即使前端已经关掉 SSE
+    或服务随后重启,这次扫描的成果也不会丢。
+    """
+    try:
+        available_list = [d for d, ok in results if ok]
+        cfg = scan.get("cfg")
+        total = scan.get("full_count", len(scan.get("domains", [])))
+        asyncio.get_running_loop().create_task(
+            history.save_scan(
+                query_key=scan.get("query_key", ""),
+                tld=cfg.tld if cfg else "",
+                mode=scan.get("mode", "brute"),
+                params=scan.get("params", {}),
+                total=total,
+                available=available_list,
+                cancelled=True,
+                checked=len(results),
+            )
+        )
+        print(
+            f"[历史] 扫描{reason},已归档部分结果:"
+            f"{len(available_list)} 个可注册 / 已检测 {len(results)} / 候选 {total}"
+        )
+    except Exception as e:
+        print(f"[历史] {reason}归档失败(忽略):{e}")
 
 
 def _save_last_scan(tld: str, domains: list[str], timestamp: float):
@@ -410,6 +446,10 @@ async def cancel_scan(scan_id: str):
         return {"status": "already_cancelled", "finished": already_finished}
 
     scan["cancelled"] = True
+    # 立刻归档这次已检测到的结果,不等后台任务收尾
+    if not already_finished and not scan.get("archived", False):
+        scan["archived"] = True
+        _archive_partial(scan, scan.get("results", []), "手动停止")
     return {"status": "cancelled", "finished": already_finished}
 
 
@@ -433,6 +473,8 @@ def _params_summary(rec: dict) -> str:
     mode = rec.get("mode", "brute")
     tld = rec.get("tld", "")
     p = rec.get("params", {}) or {}
+    # 中途停止的扫描,摘要里标明,避免误以为是完整结果
+    flag = " · 已停止" if rec.get("cancelled") else ""
     if mode == "prefix_word":
         prefix = p.get("prefix", "")
         suffix = p.get("suffix", "")
@@ -443,11 +485,11 @@ def _params_summary(rec: dict) -> str:
         parts.append(f"{wl} 字母单词")
         if suffix and suffix != "@":
             parts.append(f"后缀 {suffix}")
-        return f"{', '.join(parts)} → .{tld}"
+        return f"{', '.join(parts)} → .{tld}{flag}"
     lengths = p.get("lengths", [])
     digits = " +数字" if p.get("use_digits") else ""
     lengths_str = "/".join(str(x) for x in lengths) if lengths else "?"
-    return f"暴力 {lengths_str} 字母{digits} → .{tld}"
+    return f"暴力 {lengths_str} 字母{digits} → .{tld}{flag}"
 
 
 @app.get("/history")
@@ -507,6 +549,11 @@ async def _run_scan(scan_id: str):
     sem = asyncio.Semaphore(cfg.concurrency)
     start_ts = time.time()
 
+    # 边扫边存:每这么多秒把已检测结果落库一次,进程被 kill/OOM 也不丢
+    last_partial_save = 0.0
+    PARTIAL_SAVE_INTERVAL = 5.0
+    _partial_forced = False
+
     whois_queried = 0
     rate_limited_count = 0
     timed_out_count = 0
@@ -539,6 +586,29 @@ async def _run_scan(scan_id: str):
     batch_timeout = (batch_size / max(cfg.concurrency, 1)) * per_domain_timeout + 30
     checked = 0
 
+    async def maybe_partial_save(force: bool = False):
+        """定期把部分结果写入历史(cancelled=1),保证崩溃后仍有记录。"""
+        nonlocal last_partial_save
+        if not scan.get("query_key"):
+            return
+        now = time.time()
+        if not force and now - last_partial_save < PARTIAL_SAVE_INTERVAL:
+            return
+        last_partial_save = now
+        try:
+            await history.save_scan(
+                query_key=scan["query_key"],
+                tld=cfg.tld,
+                mode=scan.get("mode", "brute"),
+                params=scan.get("params", {}),
+                total=scan.get("full_count", total),
+                available=[d for d, ok in results if ok],
+                cancelled=True,
+                checked=len(results),
+            )
+        except Exception as e:
+            print(f"[历史] 自动存档失败(忽略):{e}")
+
     async def emit_progress():
         await queue.put({
             "type": "progress",
@@ -555,6 +625,9 @@ async def _run_scan(scan_id: str):
     try:
         for i in range(0, total, batch_size):
             if scan["cancelled"]:
+                if not scan.get("archived", False):
+                    scan["archived"] = True
+                    _archive_partial(scan, results, "被停止")
                 await queue.put({"type": "done", "data": {"cancelled": True}})
                 return
 
@@ -565,6 +638,9 @@ async def _run_scan(scan_id: str):
                 for fut in asyncio.as_completed(tasks, timeout=batch_timeout):
                     # 逐个结果检查取消，避免批次内响应延迟
                     if scan["cancelled"]:
+                        if not scan.get("archived", False):
+                            scan["archived"] = True
+                            _archive_partial(scan, results, "被停止")
                         break
                     domain, available, meta = await fut
                     done_domains.add(domain)
@@ -597,6 +673,11 @@ async def _run_scan(scan_id: str):
                         current_sleep = max(current_sleep * 0.8, cfg.batch_sleep)
 
                     await emit_progress()
+                    if not _partial_forced:
+                        _partial_forced = True
+                        await maybe_partial_save(force=True)
+                    else:
+                        await maybe_partial_save()
 
                     if available:
                         await queue.put({
@@ -620,6 +701,7 @@ async def _run_scan(scan_id: str):
 
             actual_sleep = current_sleep if rate_limited_count > 0 else cfg.batch_sleep
             if actual_sleep > 0 and i + batch_size < total:
+                await maybe_partial_save()
                 await asyncio.sleep(actual_sleep)
 
         # ── 冷却复检：限流/超时导致结果不确定的域名,等注册局配额恢复后重查一次 ──
@@ -691,6 +773,8 @@ async def _run_scan(scan_id: str):
                 params=scan.get("params", {}),
                 total=scan.get("full_count", total),  # 记全量候选数,而非增量后的
                 available=available_list,
+                cancelled=False,
+                checked=total,  # 完整跑完,清除"已停止"标记
             )
         except Exception as e:
             print(f"[历史] 写入失败(忽略):{e}")
@@ -711,6 +795,9 @@ async def _run_scan(scan_id: str):
         })
     except Exception as e:
         scan["finished"] = True
+        if not scan.get("archived", False):
+            scan["archived"] = True
+            _archive_partial(scan, results, "异常中断")
         await queue.put({"type": "error", "data": {"message": str(e)}})
     finally:
         await session.close()

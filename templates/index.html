@@ -456,6 +456,10 @@
             background: rgba(139,92,246,0.1);
             color: #a78bfa;
         }
+        .hi-tag.stopped {
+            background: rgba(245,158,11,0.12);
+            color: #f59e0b;
+        }
 
         .history-item-right {
             display: flex;
@@ -2340,6 +2344,7 @@
 
                 if (data.cancelled) {
                     showToast('warning', '扫描已停止');
+                    loadHistory();
                 } else {
                     const count = data.available_count || foundDomains.length;
                     showToast('success', `扫描完成！共检测 ${data.total_checked} 个域名，找到 ${count} 个可注册域名`);
@@ -2739,16 +2744,20 @@
             if (eventSource) { eventSource.close(); eventSource = null; }
             scanningActive = false;
             currentScanId = null;
-            // 隐藏扫描进度区域，回到初始配置界面
+            // 已找到的域名保留在结果区(历史侧栏也会留下这条记录)
             $('progress-section').classList.remove('visible');
-            $('results-area').classList.remove('visible');
             $('scanning-hint').classList.remove('visible');
-            foundDomains = [];
-            $('results-grid').innerHTML = '';
-            $('results-count').textContent = '0';
-            $('results-empty').classList.remove('visible');
+            $('results-area').classList.toggle('visible', foundDomains.length > 0);
+            if (foundDomains.length > 0) {
+                currentPage = 1;
+                renderCurrentPage();
+                saveToLocalStorage(foundDomains);
+                loadHistory();
+            }
             finishScan(); // 重置开始/停止按钮状态
-            showToast('info', '扫描已停止');
+            showToast('info', foundDomains.length > 0
+                ? `扫描已停止，已保留 ${foundDomains.length} 个结果并记入历史`
+                : '扫描已停止');
         }
 
         // ================================================================
@@ -2833,7 +2842,10 @@
                             <div class="history-item-title">${escapeHtml(item.summary || '未知查询')}</div>
                             <div class="history-item-meta">
                                 <span class="hi-tag ${modeClass}">${modeLabel}</span>
-                                <span>${item.total || 0} 候选</span>
+                                ${item.cancelled ? '<span class="hi-tag stopped">已停止</span>' : ''}
+                                <span>${item.cancelled
+                                    ? `已检测 ${item.checked || 0}/${item.total || 0}`
+                                    : `${item.total || 0} 候选`}</span>
                                 <span>${fmtTime(item.updated_at || item.created_at)}</span>
                             </div>
                         </div>
@@ -2906,6 +2918,7 @@
                     </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
                         ${rec.total || 0} 候选 → ${avail.length} 可注册
+                        ${rec.cancelled ? `&nbsp;·&nbsp; <span style="color:var(--warning,#f59e0b);">已停止（已检测 ${rec.checked || 0}，结果为部分）</span>` : ''}
                         &nbsp;·&nbsp; ${fmtTime(rec.updated_at || rec.created_at)}
                     </div>
                     <div class="hi-available-list">
