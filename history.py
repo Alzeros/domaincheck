@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS scans (
     params_json TEXT NOT NULL,          -- 完整查询参数
     total       INTEGER NOT NULL,       -- 本次扫描候选域名总数
     available   TEXT NOT NULL,          -- 可注册域名 JSON 数组
+    cancelled   INTEGER NOT NULL DEFAULT 0,  -- 1 = 中途停止,available 只是部分结果
+    checked     INTEGER NOT NULL DEFAULT 0,  -- 本次实际检测了多少个域名
     created_at  REAL NOT NULL,
     updated_at  REAL NOT NULL
 );
@@ -49,6 +51,14 @@ def init_db():
     conn = _connect()
     try:
         conn.executescript(_schema)
+        # 旧库平滑升级:补上后续版本新增的列
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(scans)").fetchall()}
+        for col, ddl in (
+            ("cancelled", "INTEGER NOT NULL DEFAULT 0"),
+            ("checked", "INTEGER NOT NULL DEFAULT 0"),
+        ):
+            if col not in cols:
+                conn.execute(f"ALTER TABLE scans ADD COLUMN {col} {ddl}")
         conn.commit()
     finally:
         conn.close()
@@ -93,19 +103,24 @@ def _save_sync(
     total: int,
     available: list[str],
     now: float,
+    cancelled: bool = False,
+    checked=None,
 ):
     conn = _connect()
     try:
         conn.execute(
             """
-            INSERT INTO scans (tld, query_key, mode, params_json, total, available, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO scans (tld, query_key, mode, params_json, total, available,
+                               cancelled, checked, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(query_key) DO UPDATE SET
                 tld=excluded.tld,
                 mode=excluded.mode,
                 params_json=excluded.params_json,
                 total=excluded.total,
                 available=excluded.available,
+                cancelled=excluded.cancelled,
+                checked=excluded.checked,
                 updated_at=excluded.updated_at
             """,
             (
@@ -113,6 +128,8 @@ def _save_sync(
                 json.dumps(params, ensure_ascii=False),
                 total,
                 json.dumps(available, ensure_ascii=False),
+                1 if cancelled else 0,
+                total if checked is None else checked,
                 now, now,
             ),
         )
@@ -128,9 +145,18 @@ async def save_scan(
     params: dict,
     total: int,
     available: list[str],
+    cancelled: bool = False,
+    checked=None,
 ) -> None:
-    """UPSERT 一条扫描记录。created_at 首次写入后不再变,updated_at 每次刷新。"""
-    await asyncio.to_thread(_save_sync, query_key, tld, mode, params, total, available, time.time())
+    """UPSERT 一条扫描记录。created_at 首次写入后不再变,updated_at 每次刷新。
+
+    cancelled=True 表示这场扫描是中途停止的,available 只是部分结果,
+    历史列表里会标注"已停止",避免和完整结果混淆。
+    """
+    await asyncio.to_thread(
+        _save_sync, query_key, tld, mode, params, total, available, time.time(),
+        cancelled, checked,
+    )
 
 
 # ── 查询 ────────────────────────────────────────────────────
@@ -210,4 +236,5 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
     d["available_list"] = json.loads(d.get("available") or "[]")
     d["available_raw"] = d.get("available")
     d["params"] = json.loads(d.get("params_json") or "{}")
+    d["cancelled"] = bool(d.get("cancelled"))
     return d
