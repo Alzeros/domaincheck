@@ -489,36 +489,68 @@ async def _run_scan(scan_id: str):
     results: list = scan["results"]
     total = len(domains)
 
-    connector = aiohttp.TCPConnector(limit=cfg.concurrency, limit_per_host=cfg.concurrency)
-    sem = asyncio.Semaphore(cfg.concurrency)
-    start_ts = time.time()
-
     headers = {
         "User-Agent": "DomainChecker/1.0",
         "Accept": "application/rdap+json",
     }
 
+    # 整个扫描共用一个 session/executor。此前每个域名都新建 ClientSession 和
+    # ThreadPoolExecutor,其 __exit__ 里的 shutdown(wait=True) 会在事件循环线程上
+    # 等待 whois 线程结束,一旦 whois 卡住就会冻结整个服务。
+    connector = aiohttp.TCPConnector(limit=cfg.concurrency, limit_per_host=cfg.concurrency)
+    session = aiohttp.ClientSession(
+        connector=connector,
+        timeout=aiohttp.ClientTimeout(total=cfg.timeout + 10),
+        headers=headers,
+    )
+    executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="whois")
+    sem = asyncio.Semaphore(cfg.concurrency)
+    start_ts = time.time()
+
     whois_queried = 0
     rate_limited_count = 0
+    timed_out_count = 0
+    retried_count = 0
     consecutive_rate_limit = 0
     current_sleep = cfg.batch_sleep
     max_sleep = 30
+    uncertain: list[str] = []
+
+    per_domain_timeout = cfg.timeout * 2
 
     async def check_one(domain: str) -> tuple[str, bool, dict]:
         if scan["cancelled"]:
             return (domain, False, {})
         async with sem:
+            if scan["cancelled"]:
+                return (domain, False, {})
             try:
-                async with aiohttp.ClientSession(
-                    connector=connector, timeout=aiohttp.ClientTimeout(total=30), headers=headers
-                ) as session:
-                    with ThreadPoolExecutor(max_workers=4) as executor:
-                        return await check_domain(cfg, domain, session, executor)
+                return await asyncio.wait_for(
+                    check_domain(cfg, domain, session, executor),
+                    timeout=per_domain_timeout,
+                )
+            except asyncio.TimeoutError:
+                return (domain, False, {"timed_out": True})
             except Exception:
                 return (domain, False, {})
 
     batch_size = cfg.concurrency * 5
+    # 看门狗:一个批次里的域名全部卡死时,超过这个时间就跳过剩余部分继续下一批
+    batch_timeout = (batch_size / max(cfg.concurrency, 1)) * per_domain_timeout + 30
     checked = 0
+
+    async def emit_progress():
+        await queue.put({
+            "type": "progress",
+            "data": {
+                "checked": checked,
+                "total": total,
+                "pct": round(checked / total * 100, 1),
+                "whois_queried": whois_queried,
+                "rate_limited": rate_limited_count,
+                "timed_out": timed_out_count,
+            },
+        })
 
     try:
         for i in range(0, total, batch_size):
@@ -527,61 +559,124 @@ async def _run_scan(scan_id: str):
                 return
 
             batch = domains[i : i + batch_size]
-            tasks = [check_one(d) for d in batch]
-            for coro in asyncio.as_completed(tasks):
-                # 逐个结果检查取消，避免批次内响应延迟
-                if scan["cancelled"]:
-                    break
-                domain, available, meta = await coro
-                checked += 1
-                results.append((domain, available))
+            tasks = [asyncio.create_task(check_one(d)) for d in batch]
+            done_domains: set[str] = set()
+            try:
+                for fut in asyncio.as_completed(tasks, timeout=batch_timeout):
+                    # 逐个结果检查取消，避免批次内响应延迟
+                    if scan["cancelled"]:
+                        break
+                    domain, available, meta = await fut
+                    done_domains.add(domain)
+                    checked += 1
+                    results.append((domain, available))
+                    scan["checked"] = checked
+
+                    if meta.get("whois_queried"):
+                        whois_queried += 1
+                    if meta.get("timed_out"):
+                        timed_out_count += 1
+                    if meta.get("rate_limited"):
+                        rate_limited_count += 1
+                        consecutive_rate_limit += 1
+                        uncertain.append(domain)
+                    elif meta.get("timed_out"):
+                        uncertain.append(domain)
+                    else:
+                        consecutive_rate_limit = 0
+
+                    # 自适应退避
+                    if consecutive_rate_limit >= 5:
+                        current_sleep = min(current_sleep * 1.5, max_sleep)
+                        consecutive_rate_limit = 0
+                        await queue.put({
+                            "type": "ratelimit",
+                            "data": {"sleep": round(current_sleep, 1)},
+                        })
+                    elif current_sleep > cfg.batch_sleep and consecutive_rate_limit == 0:
+                        current_sleep = max(current_sleep * 0.8, cfg.batch_sleep)
+
+                    await emit_progress()
+
+                    if available:
+                        await queue.put({
+                            "type": "found",
+                            "data": {"domain": domain},
+                        })
+            except asyncio.TimeoutError:
+                # 看门狗触发:把没完成的域名记为不可用,扫描继续,不能整场卡死
+                missing = [d for d in batch if d not in done_domains]
+                checked += len(missing)
+                timed_out_count += len(missing)
+                results.extend((d, False) for d in missing)
                 scan["checked"] = checked
-
-                if meta.get("whois_queried"):
-                    whois_queried += 1
-                if meta.get("rate_limited"):
-                    rate_limited_count += 1
-                    consecutive_rate_limit += 1
-                else:
-                    consecutive_rate_limit = 0
-
-                # 自适应退避
-                if consecutive_rate_limit >= 5:
-                    current_sleep = min(current_sleep * 1.5, max_sleep)
-                    consecutive_rate_limit = 0
-                    await queue.put({
-                        "type": "ratelimit",
-                        "data": {"sleep": round(current_sleep, 1)},
-                    })
-                elif current_sleep > cfg.batch_sleep and consecutive_rate_limit == 0:
-                    current_sleep = max(current_sleep * 0.8, cfg.batch_sleep)
-
-                await queue.put({
-                    "type": "progress",
-                    "data": {
-                        "checked": checked,
-                        "total": total,
-                        "pct": round(checked / total * 100, 1),
-                        "whois_queried": whois_queried,
-                        "rate_limited": rate_limited_count,
-                    },
-                })
-
-                if available:
-                    await queue.put({
-                        "type": "found",
-                        "data": {"domain": domain},
-                    })
+                print(f"[扫描] 批次超时,跳过 {len(missing)} 个未完成域名")
+                await emit_progress()
+            finally:
+                for t in tasks:
+                    if not t.done():
+                        t.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
 
             actual_sleep = current_sleep if rate_limited_count > 0 else cfg.batch_sleep
             if actual_sleep > 0 and i + batch_size < total:
                 await asyncio.sleep(actual_sleep)
+
+        # ── 冷却复检：限流/超时导致结果不确定的域名,等注册局配额恢复后重查一次 ──
+        if uncertain and not scan["cancelled"]:
+            cooldown = 65
+            await queue.put({
+                "type": "retry",
+                "data": {"count": len(uncertain), "wait": cooldown},
+            })
+            for _ in range(cooldown):
+                if scan["cancelled"]:
+                    break
+                await asyncio.sleep(1)
+            if not scan["cancelled"]:
+                retry_sem = asyncio.Semaphore(3)
+
+                async def recheck_one(domain: str):
+                    async with retry_sem:
+                        if scan["cancelled"]:
+                            return (domain, None, {})
+                        try:
+                            return await asyncio.wait_for(
+                                check_domain(cfg, domain, session, executor),
+                                timeout=per_domain_timeout,
+                            )
+                        except asyncio.TimeoutError:
+                            return (domain, None, {"timed_out": True})
+                        except Exception:
+                            return (domain, None, {})
+
+                retry_results = await asyncio.gather(
+                    *[recheck_one(d) for d in uncertain], return_exceptions=False
+                )
+                idx = {d: i for i, (d, _) in enumerate(results)}
+                still_uncertain = 0
+                for domain, available, meta in retry_results:
+                    retried_count += 1
+                    if available is None:
+                        still_uncertain += 1
+                        continue
+                    if domain in idx:
+                        results[idx[domain]] = (domain, available)
+                    if available:
+                        await queue.put({
+                            "type": "found",
+                            "data": {"domain": domain},
+                        })
+                rate_limited_count = still_uncertain
+                scan["checked"] = checked
+                await emit_progress()
 
         elapsed = time.time() - start_ts
         scan["elapsed"] = elapsed
         scan["finished"] = True
         scan["whois_queried"] = whois_queried
         scan["rate_limited"] = rate_limited_count
+        scan["timed_out"] = timed_out_count
 
         available_list = [d for d, ok in results if ok]
         _save_last_scan(cfg.tld, available_list, time.time())
@@ -608,6 +703,8 @@ async def _run_scan(scan_id: str):
                 "elapsed": round(elapsed, 1),
                 "whois_queried": whois_queried,
                 "rate_limited": rate_limited_count,
+                "timed_out": timed_out_count,
+                "retried": retried_count,
                 "incremental": scan.get("incremental", False),
                 "skipped": scan.get("skipped", 0),
             },
@@ -615,6 +712,9 @@ async def _run_scan(scan_id: str):
     except Exception as e:
         scan["finished"] = True
         await queue.put({"type": "error", "data": {"message": str(e)}})
+    finally:
+        await session.close()
+        executor.shutdown(wait=False, cancel_futures=True)
 
 
 # ── 启动 ──────────────────────────────────────────────────
