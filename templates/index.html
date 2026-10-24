@@ -610,6 +610,98 @@
         }
 
         /* TLD Pills */
+
+        .tld-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+        .tld-head .form-label { margin-bottom: 0; }
+        .tld-now {
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .tld-now strong {
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+        .tld-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            margin: 8px 0 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .tld-tabs {
+            display: flex;
+            gap: 2px;
+            min-width: 0;
+            overflow-x: auto;
+        }
+        .tld-tab {
+            appearance: none;
+            background: none;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font: 500 13px var(--font-sans);
+            padding: 8px 12px 10px;
+            margin-bottom: -1px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .tld-tab:hover { color: var(--text-secondary); }
+        .tld-tab.is-on {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent);
+        }
+        .tld-search {
+            width: 108px;
+            margin-left: auto;
+            margin-bottom: 6px;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font: 13px var(--font-mono);
+            padding: 6px 0;
+            outline: none;
+        }
+        .tld-search::placeholder { color: var(--text-muted); }
+        .tld-search:focus { border-bottom-color: var(--accent); }
+        .tld-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+            gap: 6px;
+        }
+        .tld-grid .pill {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: transparent;
+            box-shadow: none;
+        }
+        .tld-grid .pill.selected {
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            border-color: var(--text-primary);
+            box-shadow: none;
+        }
+        .tld-grid .pill[hidden] { display: none; }
+        .tld-empty {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+
         .pill-grid {
             display: flex;
             gap: 8px;
@@ -1544,7 +1636,7 @@
                         <span id="conn-text">就绪</span>
                     </div>
                     <div class="hero-badges">
-                        <span class="hero-badge"><span class="dot green"></span> 13 TLD</span>
+                        <span class="hero-badge"><span class="dot green"></span> 多后缀</span>
                         <span class="hero-badge"><span class="dot blue"></span> DNS+RDAP+Whois</span>
                         <span class="hero-badge"><span class="dot cyan"></span> SSE</span>
                     </div>
@@ -1611,38 +1703,146 @@
                     </button>
                 </div>
 
-            <!-- TLD Pills (shared) -->
-            <div class="form-section">
-                <span class="form-label">顶级域 (TLD)</span>
-                <div class="pill-grid" id="tld-pills">
-                    <span class="pill selected" data-tld="de">.de</span>
-                    <span class="pill" data-tld="com">.com</span>
-                    <span class="pill" data-tld="io">.io</span>
-                    <span class="pill" data-tld="xyz">.xyz</span>
-                    <span class="pill" data-tld="org">.org</span>
-                    <span class="pill" data-tld="net">.net</span>
-                    <span class="pill" data-tld="cn">.cn</span>
-                    <span class="pill" data-tld="cc">.cc</span>
-                    <span class="pill" data-tld="top">.top</span>
-                    <span class="pill" data-tld="vip">.vip</span>
-                    <span class="pill" data-tld="me">.me</span>
-                    <span class="pill" data-tld="cv">.cv</span>
-                    <span class="pill" data-tld="tech">.tech</span>
+            <!-- TLD picker -->
+            <div class="form-section tld-section">
+                <div class="tld-head">
+                    <span class="form-label">顶级域</span>
+                    <span class="tld-now">当前 <strong id="tld-current">.de</strong></span>
                 </div>
+                <div class="tld-bar">
+                    <div class="tld-tabs" id="tld-tabs" role="tablist">
+                        <button type="button" class="tld-tab is-on" data-group="core">常用</button>
+                        <button type="button" class="tld-tab" data-group="hot">热门</button>
+                        <button type="button" class="tld-tab" data-group="site">站点</button>
+                        <button type="button" class="tld-tab" data-group="word">创意</button>
+                        <button type="button" class="tld-tab" data-group="cc2">国家</button>
+                    </div>
+                    <input id="tld-search" class="tld-search" type="search" placeholder="搜索" autocomplete="off" spellcheck="false" aria-label="搜索顶级域">
+                </div>
+                <div class="tld-grid" id="tld-pills">
+                    <button type="button" class="pill selected" data-tld="de" data-group="core">.de</button>
+                    <button type="button" class="pill" data-tld="com" data-group="core">.com</button>
+                    <button type="button" class="pill" data-tld="net" data-group="core">.net</button>
+                    <button type="button" class="pill" data-tld="org" data-group="core">.org</button>
+                    <button type="button" class="pill" data-tld="io" data-group="core">.io</button>
+                    <button type="button" class="pill" data-tld="xyz" data-group="core">.xyz</button>
+                    <button type="button" class="pill" data-tld="cc" data-group="core">.cc</button>
+                    <button type="button" class="pill" data-tld="top" data-group="core">.top</button>
+                    <button type="button" class="pill" data-tld="vip" data-group="core">.vip</button>
+                    <button type="button" class="pill" data-tld="me" data-group="core">.me</button>
+                    <button type="button" class="pill" data-tld="cv" data-group="core">.cv</button>
+                    <button type="button" class="pill" data-tld="tech" data-group="core">.tech</button>
+                    <button type="button" class="pill" data-tld="cn" data-group="core">.cn</button>
+                    <button type="button" class="pill" data-tld="info" data-group="hot">.info</button>
+                    <button type="button" class="pill" data-tld="biz" data-group="hot">.biz</button>
+                    <button type="button" class="pill" data-tld="app" data-group="hot">.app</button>
+                    <button type="button" class="pill" data-tld="dev" data-group="hot">.dev</button>
+                    <button type="button" class="pill" data-tld="co" data-group="hot">.co</button>
+                    <button type="button" class="pill" data-tld="site" data-group="site">.site</button>
+                    <button type="button" class="pill" data-tld="online" data-group="site">.online</button>
+                    <button type="button" class="pill" data-tld="store" data-group="site">.store</button>
+                    <button type="button" class="pill" data-tld="space" data-group="site">.space</button>
+                    <button type="button" class="pill" data-tld="website" data-group="site">.website</button>
+                    <button type="button" class="pill" data-tld="pw" data-group="site">.pw</button>
+                    <button type="button" class="pill" data-tld="press" data-group="site">.press</button>
+                    <button type="button" class="pill" data-tld="host" data-group="site">.host</button>
+                    <button type="button" class="pill" data-tld="fun" data-group="site">.fun</button>
+                    <button type="button" class="pill" data-tld="fm" data-group="word">.fm</button>
+                    <button type="button" class="pill" data-tld="art" data-group="word">.art</button>
+                    <button type="button" class="pill" data-tld="best" data-group="word">.best</button>
+                    <button type="button" class="pill" data-tld="icu" data-group="word">.icu</button>
+                    <button type="button" class="pill" data-tld="lol" data-group="word">.lol</button>
+                    <button type="button" class="pill" data-tld="monster" data-group="word">.monster</button>
+                    <button type="button" class="pill" data-tld="sbs" data-group="word">.sbs</button>
+                    <button type="button" class="pill" data-tld="agency" data-group="word">.agency</button>
+                    <button type="button" class="pill" data-tld="digital" data-group="word">.digital</button>
+                    <button type="button" class="pill" data-tld="email" data-group="word">.email</button>
+                    <button type="button" class="pill" data-tld="pizza" data-group="word">.pizza</button>
+                    <button type="button" class="pill" data-tld="link" data-group="word">.link</button>
+                    <button type="button" class="pill" data-tld="one" data-group="word">.one</button>
+                    <button type="button" class="pill" data-tld="tv" data-group="word">.tv</button>
+                    <button type="button" class="pill" data-tld="buzz" data-group="word">.buzz</button>
+                    <button type="button" class="pill" data-tld="club" data-group="word">.club</button>
+                    <button type="button" class="pill" data-tld="design" data-group="word">.design</button>
+                    <button type="button" class="pill" data-tld="wiki" data-group="word">.wiki</button>
+                    <button type="button" class="pill" data-tld="work" data-group="word">.work</button>
+                    <button type="button" class="pill" data-tld="review" data-group="word">.review</button>
+                    <button type="button" class="pill" data-tld="science" data-group="word">.science</button>
+                    <button type="button" class="pill" data-tld="moe" data-group="word">.moe</button>
+                    <button type="button" class="pill" data-tld="beer" data-group="word">.beer</button>
+                    <button type="button" class="pill" data-tld="gift" data-group="word">.gift</button>
+                    <button type="button" class="pill" data-tld="click" data-group="word">.click</button>
+                    <button type="button" class="pill" data-tld="cloud" data-group="word">.cloud</button>
+                    <button type="button" class="pill" data-tld="ly" data-group="cc2">.ly</button>
+                    <button type="button" class="pill" data-tld="to" data-group="cc2">.to</button>
+                    <button type="button" class="pill" data-tld="bank" data-group="cc2">.bank</button>
+                    <button type="button" class="pill" data-tld="nl" data-group="cc2">.nl</button>
+                    <button type="button" class="pill" data-tld="fr" data-group="cc2">.fr</button>
+                    <button type="button" class="pill" data-tld="uk" data-group="cc2">.uk</button>
+                    <button type="button" class="pill" data-tld="br" data-group="cc2">.br</button>
+                </div>
+                <p class="tld-empty" id="tld-empty" hidden>没有匹配的后缀</p>
                 <select id="tld" class="hidden">
                     <option value="de" selected>.de</option>
                     <option value="com">.com</option>
+                    <option value="net">.net</option>
+                    <option value="org">.org</option>
                     <option value="io">.io</option>
                     <option value="xyz">.xyz</option>
-                    <option value="org">.org</option>
-                    <option value="net">.net</option>
-                    <option value="cn">.cn</option>
                     <option value="cc">.cc</option>
                     <option value="top">.top</option>
                     <option value="vip">.vip</option>
                     <option value="me">.me</option>
                     <option value="cv">.cv</option>
                     <option value="tech">.tech</option>
+                    <option value="cn">.cn</option>
+                    <option value="info">.info</option>
+                    <option value="biz">.biz</option>
+                    <option value="app">.app</option>
+                    <option value="dev">.dev</option>
+                    <option value="co">.co</option>
+                    <option value="site">.site</option>
+                    <option value="online">.online</option>
+                    <option value="store">.store</option>
+                    <option value="space">.space</option>
+                    <option value="website">.website</option>
+                    <option value="pw">.pw</option>
+                    <option value="press">.press</option>
+                    <option value="host">.host</option>
+                    <option value="fun">.fun</option>
+                    <option value="fm">.fm</option>
+                    <option value="art">.art</option>
+                    <option value="best">.best</option>
+                    <option value="icu">.icu</option>
+                    <option value="lol">.lol</option>
+                    <option value="monster">.monster</option>
+                    <option value="sbs">.sbs</option>
+                    <option value="agency">.agency</option>
+                    <option value="digital">.digital</option>
+                    <option value="email">.email</option>
+                    <option value="pizza">.pizza</option>
+                    <option value="link">.link</option>
+                    <option value="one">.one</option>
+                    <option value="tv">.tv</option>
+                    <option value="buzz">.buzz</option>
+                    <option value="club">.club</option>
+                    <option value="design">.design</option>
+                    <option value="wiki">.wiki</option>
+                    <option value="work">.work</option>
+                    <option value="review">.review</option>
+                    <option value="science">.science</option>
+                    <option value="moe">.moe</option>
+                    <option value="beer">.beer</option>
+                    <option value="gift">.gift</option>
+                    <option value="click">.click</option>
+                    <option value="cloud">.cloud</option>
+                    <option value="ly">.ly</option>
+                    <option value="to">.to</option>
+                    <option value="bank">.bank</option>
+                    <option value="nl">.nl</option>
+                    <option value="fr">.fr</option>
+                    <option value="uk">.uk</option>
+                    <option value="br">.br</option>
                 </select>
             </div>
 
@@ -1900,15 +2100,71 @@
         }
 
         // ================================================================
-        // TLD PILLS
+        // TLD PICKER
         // ================================================================
-        document.getElementById('tld-pills').addEventListener('click', (e) => {
-            const pill = e.target.closest('.pill');
-            if (!pill) return;
-            document.querySelectorAll('#tld-pills .pill').forEach(p => p.classList.remove('selected'));
-            pill.classList.add('selected');
-            $('tld').value = pill.dataset.tld;
+        let tldGroup = "core";
+        try {
+            const savedGroup = localStorage.getItem("dc-tld-tab");
+            if (savedGroup && document.querySelector('#tld-tabs .tld-tab[data-group="' + savedGroup + '"]')) {
+                tldGroup = savedGroup;
+            }
+        } catch (e) {}
+
+        function syncTldCurrent(tld) {
+            const label = document.getElementById("tld-current");
+            if (label) label.textContent = "." + tld;
+        }
+
+        function selectTld(tld) {
+            document.querySelectorAll("#tld-pills .pill").forEach(p => {
+                p.classList.toggle("selected", p.dataset.tld === tld);
+            });
+            $("tld").value = tld;
+            syncTldCurrent(tld);
+        }
+
+        function renderTldPicker() {
+            const raw = ($("tld-search").value || "").trim().toLowerCase().replace(/^\./, "");
+            document.querySelectorAll("#tld-tabs .tld-tab").forEach(tab => {
+                tab.classList.toggle("is-on", !raw && tab.dataset.group === tldGroup);
+            });
+            let shown = 0;
+            document.querySelectorAll("#tld-pills .pill").forEach(pill => {
+                const hit = !raw
+                    ? pill.dataset.group === tldGroup
+                    : pill.dataset.tld.includes(raw);
+                pill.hidden = !hit;
+                if (hit) shown += 1;
+            });
+            const empty = document.getElementById("tld-empty");
+            if (empty) empty.hidden = shown !== 0;
+        }
+
+        document.getElementById("tld-tabs").addEventListener("click", (e) => {
+            const tab = e.target.closest(".tld-tab");
+            if (!tab) return;
+            tldGroup = tab.dataset.group;
+            try { localStorage.setItem("dc-tld-tab", tldGroup); } catch (err) {}
+            $("tld-search").value = "";
+            renderTldPicker();
         });
+
+        $("tld-search").addEventListener("input", renderTldPicker);
+
+        document.getElementById("tld-pills").addEventListener("click", (e) => {
+            const pill = e.target.closest(".pill");
+            if (!pill || pill.hidden) return;
+            selectTld(pill.dataset.tld);
+            if ($("tld-search").value.trim()) {
+                tldGroup = pill.dataset.group;
+                try { localStorage.setItem("dc-tld-tab", tldGroup); } catch (err) {}
+                $("tld-search").value = "";
+                renderTldPicker();
+            }
+        });
+
+        renderTldPicker();
+        syncTldCurrent($("tld").value || "de");
 
         // ================================================================
         // INIT
