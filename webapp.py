@@ -2,8 +2,10 @@
 """Domain Checker Web App — FastAPI + SSE 实时推送"""
 
 import asyncio
+import hashlib
 import json
 import os
+import re
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -58,6 +60,7 @@ async def lifespan(app: FastAPI):
         _archive_partial(s, s.get("results", []), "服务重启")
     scans.clear()
     history.init_db()  # 建表(幂等)
+    _load_word_config()  # 词表启停/自定义覆盖配置
     yield
 
 
@@ -163,6 +166,70 @@ def load_words(length: int) -> dict:
 WORD_CACHE: dict[int, dict] = {}
 
 
+# ── 词表覆盖配置(启停/自定义) ────────────────────────────
+# 预设词表(words_N.json)保持只读,用户在词表管理面板里的停用/添加
+# 写入 wordlist_config.json 作为覆盖层,扫描时应用。
+WORD_CONFIG_FILE = Path("wordlist_config.json")
+WORD_CONFIG: dict[str, dict] = {}  # "3" -> {"disabled": set, "added": list}
+
+
+def _load_word_config():
+    global WORD_CONFIG
+    try:
+        raw = json.loads(WORD_CONFIG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        raw = {}
+    config: dict[str, dict] = {}
+    for key, val in (raw or {}).items():
+        if not isinstance(val, dict):
+            continue
+        config[str(key)] = {
+            "disabled": {str(w) for w in val.get("disabled", [])},
+            "added": [str(w) for w in val.get("added", [])],
+        }
+    WORD_CONFIG = config
+
+
+def _save_word_config():
+    data = {
+        k: {"disabled": sorted(v["disabled"]), "added": v["added"]}
+        for k, v in WORD_CONFIG.items()
+    }
+    tmp = WORD_CONFIG_FILE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(WORD_CONFIG_FILE)
+
+
+def _base_word_set(length: int) -> set:
+    if length not in WORD_CACHE:
+        WORD_CACHE[length] = load_words(length)
+    return set(WORD_CACHE[length].get("words", []))
+
+
+def _apply_word_overlay(length: int, only_common: bool, only_custom: bool = False) -> list[str]:
+    """按覆盖配置计算一次扫描实际要用的单词表。
+
+    仅自定义:只扫用户添加的词(跨长度不适用,按当前长度取);
+    停用的词剔除;only_common 只保留预设里的常用词;
+    自定义添加的词永远启用、按常用词对待(用户特意加的,不该被
+    「仅常用词」过滤掉)。"""
+    if length not in WORD_CACHE:
+        WORD_CACHE[length] = load_words(length)
+    wl = WORD_CACHE[length]
+    words = wl.get("words", [])
+    common_set = set(words[: wl.get("common_count", 0)])
+    wcfg = WORD_CONFIG.get(str(length)) or {"disabled": set(), "added": []}
+
+    if only_custom:
+        return list(wcfg["added"])
+
+    base = [w for w in words if w not in wcfg["disabled"]]
+    if only_common:
+        base = [w for w in base if w in common_set]
+    added = [w for w in wcfg["added"] if w not in set(base)]
+    return base + added
+
+
 # ── 发起扫描 ──────────────────────────────────────────────
 
 @app.post("/scan")
@@ -175,19 +242,19 @@ async def start_scan(data: dict):
     domains: list[str] = []
 
     if mode == "prefix_word":
-        # "前缀 + 单词 + 后缀"模式
+        # "前缀 + 单词 + 后缀"模式(词表经过用户启停/自定义覆盖)
         prefix = data.get("prefix", "x").lower()
         suffix = data.get("suffix", "@").lower()
         word_length = data.get("word_length", 3)
         only_common = data.get("only_common", True)
+        only_custom = bool(data.get("only_custom", False))
 
-        if word_length not in WORD_CACHE:
-            WORD_CACHE[word_length] = load_words(word_length)
-        wl = WORD_CACHE[word_length]
-        words = wl.get("words", [])
-        if only_common:
-            common_count = wl.get("common_count", 0)
-            words = words[:common_count]
+        words = _apply_word_overlay(word_length, only_common, only_custom)
+        if only_custom and not words:
+            return JSONResponse(
+                {"error": f"{word_length} 字母词表还没有自定义词，请先在「管理词表」中添加"},
+                status_code=400,
+            )
 
         p = prefix if prefix not in ("@", "") else ""
         s = suffix if suffix not in ("@", "") else ""
@@ -228,7 +295,8 @@ async def start_scan(data: dict):
             "prefix": data.get("prefix", "x"),
             "suffix": data.get("suffix", "@"),
             "word_length": word_length,
-            "only_common": only_common,
+            "only_common": only_common and not only_custom,
+            "only_custom": only_custom,
         }
     else:
         params = {
@@ -237,6 +305,12 @@ async def start_scan(data: dict):
             "use_digits": use_digits,
         }
     query_key = history.make_query_key(mode, params)
+    if mode == "prefix_word":
+        # 词表内容(预设+用户启停/自定义)参与指纹:候选集变了就是一次
+        # 新查询。否则增量复检会把新加入、从未检测过的词当成
+        # 「已知注册域名」直接跳过,产出假结果。
+        fp = hashlib.md5(",".join(sorted(domains)).encode("utf-8")).hexdigest()[:10]
+        query_key += f"|w{fp}"
     full_count = len(domains)   # 全量候选数(归档用)
     incremental = False         # 是否命中增量复检
     skipped = 0                 # 跳过了多少已知注册域名
@@ -396,17 +470,98 @@ async def get_active_scan():
 
 @app.get("/words-meta")
 async def get_words_meta():
-    """返回可用单词表的元信息"""
+    """返回可用单词表的元信息(已应用启停/自定义覆盖)。"""
     meta = {}
     for length in [1, 2, 3, 4]:
         if length not in WORD_CACHE:
             WORD_CACHE[length] = load_words(length)
-        wl = WORD_CACHE[length]
+        enabled = _apply_word_overlay(length, only_common=False)
+        enabled_common = _apply_word_overlay(length, only_common=True)
+        custom = _apply_word_overlay(length, only_common=False, only_custom=True)
         meta[str(length)] = {
-            "total": wl["total"],
-            "common_count": wl["common_count"],
+            "total": len(enabled),
+            "common_count": len(enabled_common),
+            "custom_count": len(custom),
         }
     return meta
+
+
+def _words_manage_payload(length: int) -> dict:
+    if length not in WORD_CACHE:
+        WORD_CACHE[length] = load_words(length)
+    wl = WORD_CACHE[length]
+    words = wl.get("words", [])
+    common_set = set(words[: wl.get("common_count", 0)])
+    wcfg = WORD_CONFIG.get(str(length)) or {"disabled": set(), "added": []}
+    items = [
+        {"w": w, "common": w in common_set, "disabled": w in wcfg["disabled"], "added": False}
+        for w in words
+    ]
+    items += [
+        {"w": w, "common": True, "disabled": False, "added": True}
+        for w in wcfg["added"]
+    ]
+    enabled = [i for i in items if not i["disabled"]]
+    return {
+        "length": length,
+        "items": items,
+        "total": len(items),
+        "enabled_total": len(enabled),
+        "enabled_common": len([i for i in enabled if i["common"]]),
+    }
+
+
+_WORD_RE = re.compile(r"^[a-z]{1,8}$")
+
+
+@app.get("/words/{length}/manage")
+async def words_manage(length: int):
+    """词表管理面板数据:每个词的常用/停用/自定义状态。"""
+    if length not in (1, 2, 3, 4):
+        return JSONResponse({"error": "不支持的词表长度"}, status_code=404)
+    return _words_manage_payload(length)
+
+
+@app.post("/words/{length}/manage")
+async def words_manage_update(length: int, data: dict):
+    """更新词表覆盖配置。
+    body: {disable: [w], enable: [w], add: [w], remove_added: [w], reset: bool}"""
+    if length not in (1, 2, 3, 4):
+        return JSONResponse({"error": "不支持的词表长度"}, status_code=404)
+    if not isinstance(data, dict):
+        return JSONResponse({"error": "无效请求"}, status_code=400)
+
+    if data.get("reset"):
+        WORD_CONFIG.pop(str(length), None)
+    else:
+        wcfg = WORD_CONFIG.setdefault(str(length), {"disabled": set(), "added": []})
+        base_set = _base_word_set(length)
+
+        for w in data.get("disable") or []:
+            w = str(w).strip().lower()
+            if _WORD_RE.match(w) and w in base_set:
+                wcfg["disabled"].add(w)
+        for w in data.get("enable") or []:
+            wcfg["disabled"].discard(str(w).strip().lower())
+        for w in data.get("add") or []:
+            w = str(w).strip().lower()
+            # 自定义词:必须是指定长度的纯字母,且不能与预设重复
+            if not _WORD_RE.match(w) or len(w) != length:
+                continue
+            if w in base_set or w in wcfg["added"]:
+                continue
+            wcfg["added"].append(w)
+        for w in data.get("remove_added") or []:
+            w = str(w).strip().lower()
+            if w in wcfg["added"]:
+                wcfg["added"].remove(w)
+        wcfg["added"] = wcfg["added"][:500]  # 防御上限
+
+    try:
+        _save_word_config()
+    except Exception as e:
+        print(f"[词表] 配置写入失败:{e}")
+    return _words_manage_payload(length)
 
 
 @app.get("/words/{length}")

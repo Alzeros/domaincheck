@@ -12,6 +12,7 @@ dist/
 last_scan_result.json
 *.csv
 history.db
+wordlist_config.json
 
 # OS
 .DS_Store

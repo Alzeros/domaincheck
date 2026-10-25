@@ -4,72 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DomainChecker — 短域名注册检测</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         /* ================================================================
            CSS DESIGN SYSTEM — Custom Properties & Reset
            ================================================================ */
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #111111;
-            --bg-card: rgba(255,255,255,0.03);
-            --bg-card-hover: rgba(255,255,255,0.06);
-            --bg-input: rgba(255,255,255,0.05);
-            --border-subtle: rgba(255,255,255,0.08);
-            --border-card: rgba(255,255,255,0.1);
-            --border-active: rgba(0,229,255,0.45);
-            --text-primary: #ffffff;
-            --text-secondary: #cccccc;
-            --text-muted: #888888;
-            --accent: #00e5ff;
-            --accent-glow: rgba(0,229,255,0.3);
-            --accent2: #00e5ff;
-            --accent2-glow: rgba(0,229,255,0.25);
-            --success: #10b981;
-            --success-glow: rgba(16,185,129,0.2);
-            --warning: #f59e0b;
-            --error: #ef4444;
+            --bg-primary: #0b0b0d;
+            --bg-secondary: #131316;
+            --bg-card: #101013;
+            --bg-card-hover: #16161a;
+            --bg-input: #0f0f12;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-card: rgba(255,255,255,0.09);
+            --border-active: rgba(110,127,243,0.55);
+            --text-primary: #f4f4f5;
+            --text-secondary: #b6b6bf;
+            --text-muted: #77777f;
+            --accent: #6e7ff3;
+            --accent-glow: rgba(110,127,243,0.14);
+            --accent2: #6e7ff3;
+            --accent2-glow: rgba(110,127,243,0.12);
+            --success: #3ecf8e;
+            --success-glow: rgba(62,207,142,0.12);
+            --warning: #d29922;
+            --error: #f47067;
             --radius-sm: 6px;
-            --radius-md: 10px;
-            --radius-lg: 16px;
-            --radius-xl: 24px;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --shadow-sm: none;
             --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
             --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-            --shadow-glow: 0 0 20px var(--accent-glow);
+            --shadow-glow: none;
             --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+            --font-mono: ui-monospace, 'SF Mono', Menlo, 'Cascadia Code', 'JetBrains Mono', monospace;
             --transition-fast: 150ms ease;
             --transition: 250ms ease;
             --transition-slow: 400ms cubic-bezier(0.4,0,0.2,1);
         }
 
         [data-theme="light"] {
-            --bg-primary: #e8eaed;
-            --bg-secondary: #f3f4f6;
-            --bg-card: rgba(255,255,255,0.7);
-            --bg-card-hover: rgba(255,255,255,0.85);
-            --bg-input: rgba(255,255,255,0.6);
-            --border-subtle: rgba(0,0,0,0.08);
-            --border-card: rgba(0,0,0,0.12);
-            --border-active: rgba(0,180,210,0.5);
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --text-muted: #64748b;
-            --accent: #0891b2;
-            --accent-glow: rgba(8,145,178,0.2);
-            --accent2: #0891b2;
-            --accent2-glow: rgba(8,145,178,0.18);
-            --success: #059669;
-            --success-glow: rgba(5,150,105,0.15);
-            --warning: #d97706;
-            --error: #dc2626;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f4f4f5;
+            --bg-input: #f4f4f5;
+            --border-subtle: rgba(0,0,0,0.07);
+            --border-card: rgba(0,0,0,0.10);
+            --border-active: rgba(91,106,219,0.55);
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
+            --accent: #5b6adb;
+            --accent-glow: rgba(91,106,219,0.12);
+            --accent2: #5b6adb;
+            --accent2-glow: rgba(91,106,219,0.10);
+            --success: #1a7f37;
+            --success-glow: rgba(26,127,55,0.12);
+            --warning: #9a6700;
+            --error: #cf222e;
+            --shadow-sm: none;
             --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
             --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
-            --shadow-glow: 0 0 20px rgba(8,145,178,0.15);
+            --shadow-glow: none;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -95,9 +92,9 @@
             width: 200%;
             height: 200%;
             background:
-                radial-gradient(ellipse at 30% 0%, rgba(0,229,255,0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 70% 0%, rgba(0,229,255,0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(0,229,255,0.03) 0%, transparent 50%);
+                radial-gradient(ellipse at 30% 0%, rgba(110,127,243,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 0%, rgba(110,127,243,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(110,127,243,0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
@@ -228,7 +225,7 @@
             letter-spacing: -0.03em;
             line-height: 1.2;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #ffffff 0%, #00e5ff 40%, #00e5ff 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #6e7ff3 40%, #6e7ff3 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -338,8 +335,8 @@
             justify-content: space-between;
             gap: 12px;
             padding: 12px 18px;
-            background: rgba(0,229,255,0.06);
-            border: 1px solid rgba(0,229,255,0.2);
+            background: rgba(110,127,243,0.06);
+            border: 1px solid rgba(110,127,243,0.2);
             border-radius: var(--radius-md);
             margin-bottom: 12px;
             font-size: 13px;
@@ -449,7 +446,7 @@
             font-weight: 600;
         }
         .hi-tag.brute {
-            background: rgba(0,229,255,0.1);
+            background: rgba(110,127,243,0.1);
             color: var(--accent);
         }
         .hi-tag.prefix {
@@ -636,6 +633,42 @@
             margin: 8px 0 12px;
             border-bottom: 1px solid var(--border-subtle);
         }
+        .tld-quick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+            padding-bottom: 8px;
+        }
+        .tld-quick .pill { padding: 6px 14px; font-size: 13px; }
+        .tld-quick .pill .qstar { color: var(--warning); margin-right: 2px; font-size: 11px; }
+        .tld-quick .qlabel {
+            align-self: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        #tld-more { margin-bottom: 6px; }
+        #tld-more .chev { display: inline-block; transition: transform var(--transition-fast); }
+        #tld-more.open .chev { transform: rotate(180deg); }
+        #tld-full { margin-top: 4px; }
+        #tld-full[hidden] { display: none; }
+        .tld-grid .pill { position: relative; }
+        .pill-star {
+            position: absolute;
+            top: -7px;
+            right: -3px;
+            font-size: 12px;
+            line-height: 1;
+            padding: 2px;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+            color: var(--text-muted);
+        }
+        .tld-grid .pill:hover .pill-star,
+        .pill-star.on { opacity: 1; }
+        .pill-star.on { color: var(--warning); }
         .tld-tabs {
             display: flex;
             gap: 2px;
@@ -725,10 +758,10 @@
         .pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
 
         .pill.selected {
-            background: rgba(0,229,255,0.1);
+            background: rgba(110,127,243,0.1);
             border-color: var(--accent);
             color: var(--accent);
-            box-shadow: 0 0 14px rgba(0,229,255,0.2);
+            box-shadow: 0 0 14px rgba(110,127,243,0.2);
         }
 
         /* Chip checkboxes */
@@ -757,7 +790,7 @@
         .chip input[type="checkbox"] { display: none; }
 
         .chip:has(input:checked) {
-            background: rgba(0,229,255,0.1);
+            background: rgba(110,127,243,0.1);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -800,9 +833,13 @@
         }
         .input-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
+            box-shadow: 0 0 0 3px rgba(110,127,243,0.12);
         }
         .input-field::placeholder { color: var(--text-muted); }
+        .input-field:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
 
         /* Select */
         .select-field {
@@ -825,7 +862,7 @@
         }
         .select-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
+            box-shadow: 0 0 0 3px rgba(110,127,243,0.12);
         }
 
         .select-field option {
@@ -853,6 +890,129 @@
             align-items: center;
             gap: 6px;
         }
+        .word-info #btn-word-manage { margin-left: auto; flex: none; }
+
+        /* ================================================================
+           WORD MODAL — 词表管理面板
+           ================================================================ */
+        .word-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .word-modal-overlay[hidden] { display: none; }
+        .word-modal-box {
+            width: min(720px, 92vw);
+            max-height: 84vh;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+        .word-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .word-modal-head h3 { font-size: 16px; font-weight: 600; }
+        .word-modal-head .wm-actions { display: flex; align-items: center; gap: 8px; }
+        .word-modal-stats { font-size: 12.5px; color: var(--text-secondary); }
+        .word-modal-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .word-modal-tools .input-field { flex: 1; min-width: 140px; padding: 7px 12px; font-size: 13px; }
+        .word-modal-add { display: flex; gap: 8px; align-items: center; }
+        .word-modal-add .input-field { flex: 1; padding: 7px 12px; font-size: 13px; font-family: var(--font-mono); }
+        .word-chips {
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            align-content: flex-start;
+            min-height: 120px;
+            max-height: 44vh;
+            padding: 2px;
+        }
+        .wchip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            border: 1px solid var(--border-card);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .wchip:hover { border-color: var(--border-active); }
+        .wchip .dotc {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.75;
+            flex: none;
+        }
+        .wchip:not(.common) .dotc { background: var(--text-muted); }
+        .wchip.added { border-style: dashed; border-color: var(--accent); }
+        .wchip.off { opacity: 0.38; text-decoration: line-through; }
+        .wchip .wmx {
+            color: var(--error);
+            font-weight: 700;
+            padding: 0 2px;
+        }
+        .wchip .wmx:hover { color: var(--text-primary); }
+
+        /* 词表按首字母分组的可折叠分区 */
+        .word-chips .wgroup { width: 100%; }
+        .wgroup-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            text-align: left;
+            background: var(--bg-secondary);
+            border: 0;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font: 600 13px var(--font-sans);
+            padding: 7px 4px;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .wgroup-head:hover { color: var(--accent); }
+        .wgroup-head .chev {
+            color: var(--text-muted);
+            font-size: 11px;
+            transition: transform var(--transition-fast);
+        }
+        .wgroup-head.open .chev { transform: rotate(90deg); }
+        .wgroup-letter { font-family: var(--font-mono); }
+        .wgroup-count { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+        .wgroup-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            padding: 8px 2px;
+            align-content: flex-start;
+        }
+        .wgroup-body[hidden] { display: none; }
 
         /* ================================================================
            BUTTONS
@@ -878,12 +1038,12 @@
         .btn-primary {
             background: var(--accent);
             color: #000;
-            box-shadow: 0 2px 16px rgba(0,229,255,0.35);
+            box-shadow: 0 2px 16px rgba(110,127,243,0.35);
             font-weight: 700;
         }
-        .btn-primary:hover { box-shadow: 0 4px 24px rgba(0,229,255,0.5); transform: translateY(-1px); }
+        .btn-primary:hover { box-shadow: 0 4px 24px rgba(110,127,243,0.5); transform: translateY(-1px); }
         .btn-primary:disabled {
-            background: rgba(0,229,255,0.2);
+            background: rgba(110,127,243,0.2);
             color: rgba(0,0,0,0.4);
             box-shadow: none;
             cursor: not-allowed;
@@ -939,7 +1099,7 @@
         }
         .btn-sort:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
         .btn-sort.active {
-            background: rgba(0,229,255,0.1);
+            background: rgba(110,127,243,0.1);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -1208,7 +1368,7 @@
         .domain-tld-badge {
             display: inline-block;
             padding: 2px 8px;
-            background: rgba(0,229,255,0.1);
+            background: rgba(110,127,243,0.1);
             color: var(--accent);
             border-radius: 4px;
             font-size: 11px;
@@ -1310,7 +1470,7 @@
             cursor: not-allowed;
         }
         .page-btn.active {
-            background: rgba(0,229,255,0.12);
+            background: rgba(110,127,243,0.12);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -1579,7 +1739,7 @@
             font-size: 22px;
             font-weight: 700;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #ffffff 0%, #00e5ff 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #6e7ff3 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -1605,6 +1765,228 @@
             display: none;
         }
         .login-error.visible { display: block; }
+
+        /* ================================================================
+           REFINEMENT LAYER — 现代极简视觉(覆盖早期霓虹风格)
+           原则:近单色配色 + 单一克制强调色;层级靠字重/字号/留白;
+           无发光、无渐变、无网格背景;主操作用高对比按钮。
+           ================================================================ */
+        :root {
+            --accent-soft: rgba(110,127,243,0.13);
+            --border-hover: rgba(255,255,255,0.16);
+            --btn-primary-bg: #f4f4f5;
+            --btn-primary-bg-hover: #d9d9de;
+            --btn-primary-fg: #0b0b0d;
+        }
+        [data-theme="light"] {
+            --accent-soft: rgba(91,106,219,0.10);
+            --border-hover: rgba(0,0,0,0.18);
+            --btn-primary-bg: #18181b;
+            --btn-primary-bg-hover: #3f3f46;
+            --btn-primary-fg: #fafafa;
+        }
+
+        /* 页面:扁平纯净,去网格与光晕 */
+        body::before, body::after { display: none !important; }
+
+        ::selection { background: var(--accent); color: #fff; }
+
+        /* 标题 */
+        .hero { padding: 26px 0 14px; }
+        .hero h1 {
+            font-family: var(--font-sans);
+            font-size: 21px;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+            margin-bottom: 0;
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+            -webkit-text-fill-color: currentColor;
+            color: var(--text-primary);
+        }
+        .hero h1::after {
+            content: '';
+            display: inline-block;
+            width: 6px; height: 6px;
+            margin-left: 7px;
+            border-radius: 2px;
+            background: var(--accent);
+            vertical-align: 8px;
+        }
+        .login-box h2 {
+            font-family: var(--font-sans);
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+            -webkit-text-fill-color: currentColor;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        [data-theme="light"] .login-box h2 {
+            background: none;
+            -webkit-text-fill-color: currentColor;
+        }
+
+        /* 卡片:发丝线区分层级 */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            backdrop-filter: none;
+            padding: 20px;
+        }
+        .card:hover { border-color: var(--border-hover); }
+
+        /* 模式切换:分段控件,去掉图标与副文案 */
+        .tab-bar {
+            background: transparent;
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 3px;
+        }
+        .tab {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 8px 16px;
+            border-radius: 7px;
+        }
+        .tab .tab-label { font-size: 13px; font-weight: 600; }
+        .tab .tab-desc { display: none; }
+        .tab.active {
+            background: var(--bg-card-hover);
+            box-shadow: none;
+            color: var(--text-primary);
+        }
+
+        /* 按钮:主操作高对比,次级幽灵 */
+        .btn { border-radius: 8px; font-weight: 500; }
+        .btn-primary {
+            background: var(--btn-primary-bg);
+            color: var(--btn-primary-fg);
+            box-shadow: none;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: var(--btn-primary-bg-hover);
+            box-shadow: none;
+            transform: none;
+        }
+        .btn-primary:disabled { background: var(--bg-input); color: var(--text-muted); }
+        .btn-danger {
+            background: transparent;
+            color: var(--error);
+            border: 1px solid rgba(244,112,103,0.35);
+        }
+        .btn-danger:hover { background: rgba(244,112,103,0.08); }
+        .btn-sort { border-radius: 6px; }
+        .btn-sort.active {
+            background: var(--accent-soft);
+            border-color: transparent;
+            color: var(--accent);
+        }
+
+        /* 输入聚焦:细边,无光晕 */
+        .input-field:focus, .select-field:focus, .tld-search:focus {
+            box-shadow: none;
+            border-color: var(--border-active);
+        }
+
+        /* 选择器 pill:高对比选中态 */
+        .pill { border-radius: 8px; padding: 6px 13px; font-size: 13px; }
+        .pill.selected {
+            background: var(--text-primary);
+            border-color: var(--text-primary);
+            color: var(--bg-primary);
+            box-shadow: none;
+        }
+        .chip { border-radius: 8px; }
+        .chip:has(input:checked) {
+            background: var(--accent-soft);
+            border-color: transparent;
+            color: var(--accent);
+        }
+        .count-badge {
+            background: var(--bg-input);
+            color: var(--text-muted);
+            border-radius: 6px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 统计:去卡片化,大数字 + 微标签 */
+        .progress-top { align-items: center; }
+        .stats-grid { gap: 0; }
+        .stat-card {
+            background: transparent;
+            border: 0;
+            border-left: 1px solid var(--border-subtle);
+            border-radius: 0;
+            padding: 6px 22px;
+        }
+        .stat-card:first-child { border-left: 0; padding-left: 0; }
+        .stat-card.highlight { background: transparent; border-left: 1px solid var(--border-subtle); }
+        .stat-value {
+            font-size: 26px;
+            font-weight: 650;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-primary);
+        }
+        .stat-label {
+            font-size: 10.5px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* 进度:细环 + 隐藏冗余线性条 */
+        .progress-ring-bg { stroke: var(--border-card); }
+        .progress-ring-fill { stroke: var(--accent); color: var(--accent); filter: none; }
+        .progress-ring-text .pct { font-weight: 650; letter-spacing: -0.02em; }
+        .progress-bar-bg { display: none; }
+        .speed-bar { font-size: 12px; }
+
+        /* 结果区 */
+        .results-toolbar h2 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+        .results-badge {
+            background: transparent;
+            color: var(--success);
+            border: 1px solid var(--success-glow);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .search-icon { display: flex; align-items: center; color: var(--text-muted); }
+        .search-icon svg { width: 13px; height: 13px; }
+        .domain-card { border-radius: 10px; }
+        .domain-name { font-weight: 600; letter-spacing: -0.01em; }
+        .domain-status { border-radius: 6px; }
+        .domain-status.available {
+            background: transparent;
+            border: 1px solid var(--success-glow);
+            color: var(--success);
+        }
+        .domain-status.just-found {
+            background: var(--accent-soft);
+            color: var(--accent);
+            animation: none;
+        }
+        [data-theme="light"] .domain-status.available { background: transparent; }
+        [data-theme="light"] .domain-status.just-found { background: var(--accent-soft); }
+
+        /* 空态与图标 */
+        .empty-icon { font-size: inherit; opacity: 0.55; color: var(--text-muted); }
+        .empty-icon svg { width: 40px; height: 40px; }
+
+        /* 提示条 */
+        .toast { border-radius: 10px; }
+        .toast-icon:empty { display: none; }
+
+        /* 历史侧栏 */
+        .sidebar-header h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.01em; }
     </style>
 </head>
 <body>
@@ -1622,8 +2004,43 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- Word List Manager Modal -->
+    <div class="word-modal-overlay" id="word-modal" hidden>
+        <div class="word-modal-box">
+            <div class="word-modal-head">
+                <h3>词表管理 <span id="wm-length-label" style="color:var(--text-muted);font-weight:400;"></span></h3>
+                <div class="wm-actions">
+                    <select id="wm-length" class="select-field" style="width:auto;padding:6px 10px;font-size:13px;">
+                        <option value="1">1 字母</option>
+                        <option value="2">2 字母</option>
+                        <option value="3">3 字母</option>
+                        <option value="4">4 字母</option>
+                    </select>
+                    <button class="close-banner" onclick="closeWordModal()">✕</button>
+                </div>
+            </div>
+            <div class="word-modal-stats" id="wm-stats"></div>
+            <div class="word-modal-tools">
+                <div class="sort-group" id="wm-filters">
+                    <button class="btn-sort active" data-wf="all">全部</button>
+                    <button class="btn-sort" data-wf="common">常用</button>
+                    <button class="btn-sort" data-wf="uncommon">非常用</button>
+                    <button class="btn-sort" data-wf="disabled">已停用</button>
+                    <button class="btn-sort" data-wf="added">自定义</button>
+                </div>
+                <input type="search" id="wm-search" class="input-field" placeholder="搜索单词..." autocomplete="off" spellcheck="false">
+                <button class="btn-sort" id="wm-expand-all" hidden>全部展开</button>
+            </div>
+            <div class="word-modal-add">
+                <input type="text" id="wm-add-input" class="input-field" placeholder="添加自定义单词">
+                <button class="btn btn-primary" style="padding:7px 16px;font-size:13px;" onclick="wmAdd()">添加</button>
+                <button class="btn" style="padding:7px 16px;font-size:13px;border:1px solid var(--border-card);" onclick="wmReset()">恢复默认</button>
+            </div>
+            <div class="word-chips" id="wm-chips"></div>
+        </div>
+    </div>
+
     <!-- Confetti Container -->
-    <div class="confetti-container" id="confetti-container"></div>
 
     <div class="container">
         <!-- ====== HERO ====== (full-width row) -->
@@ -1635,13 +2052,8 @@
                         <span class="conn-dot" id="conn-dot"></span>
                         <span id="conn-text">就绪</span>
                     </div>
-                    <div class="hero-badges">
-                        <span class="hero-badge"><span class="dot green"></span> 多后缀</span>
-                        <span class="hero-badge"><span class="dot blue"></span> DNS+RDAP+Whois</span>
-                        <span class="hero-badge"><span class="dot cyan"></span> SSE</span>
-                    </div>
                     <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
-                        <span id="theme-icon">🌙</span>
+                        <span id="theme-icon"></span>
                     </button>
                 </div>
             </div>
@@ -1668,7 +2080,7 @@
             <!-- ====== HISTORY SIDEBAR ====== -->
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <h3>📋 扫描历史 <span class="count-badge" id="history-count">0</span></h3>
+                    <h3>扫描历史 <span class="count-badge" id="history-count">0</span></h3>
                     <button class="btn-icon" onclick="loadHistory()" title="刷新历史">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="23 4 23 10 17 10"/>
@@ -1678,7 +2090,7 @@
                 </div>
                 <div class="sidebar-body">
                     <div class="sidebar-empty" id="history-empty">
-                        <div class="empty-icon">📭</div>
+                        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>
                         <p>还没有扫描记录</p>
                     </div>
                     <div id="history-list"></div>
@@ -1692,12 +2104,10 @@
                 <!-- Tab Bar -->
                 <div class="tab-bar" id="tab-bar">
                     <button class="tab active" data-mode="prefix" onclick="setMode('prefix')">
-                        <span class="tab-icon">✨</span>
                         <span class="tab-label">单词模式</span>
-                        <span class="tab-desc">前缀+单词+后缀 / @=无</span>
+                        <span class="tab-desc">前缀+单词+后缀，可留空</span>
                     </button>
                     <button class="tab" data-mode="brute" onclick="setMode('brute')">
-                        <span class="tab-icon">🔢</span>
                         <span class="tab-label">暴力扫描</span>
                         <span class="tab-desc">全部字母组合</span>
                     </button>
@@ -1710,6 +2120,11 @@
                     <span class="tld-now">当前 <strong id="tld-current">.de</strong></span>
                 </div>
                 <div class="tld-bar">
+                    <div class="tld-quick" id="tld-quick"></div>
+                    <button type="button" class="tld-tab" id="tld-more">全部后缀 <span class="chev">▾</span></button>
+                    <input id="tld-search" class="tld-search" type="search" placeholder="搜索后缀" autocomplete="off" spellcheck="false" aria-label="搜索顶级域">
+                </div>
+                <div id="tld-full" hidden>
                     <div class="tld-tabs" id="tld-tabs" role="tablist">
                         <button type="button" class="tld-tab is-on" data-group="core">常用</button>
                         <button type="button" class="tld-tab" data-group="hot">热门</button>
@@ -1717,8 +2132,6 @@
                         <button type="button" class="tld-tab" data-group="word">创意</button>
                         <button type="button" class="tld-tab" data-group="cc2">国家</button>
                     </div>
-                    <input id="tld-search" class="tld-search" type="search" placeholder="搜索" autocomplete="off" spellcheck="false" aria-label="搜索顶级域">
-                </div>
                 <div class="tld-grid" id="tld-pills">
                     <button type="button" class="pill selected" data-tld="de" data-group="core">.de</button>
                     <button type="button" class="pill" data-tld="com" data-group="core">.com</button>
@@ -1782,6 +2195,7 @@
                     <button type="button" class="pill" data-tld="br" data-group="cc2">.br</button>
                 </div>
                 <p class="tld-empty" id="tld-empty" hidden>没有匹配的后缀</p>
+                </div><!-- /tld-full -->
                 <select id="tld" class="hidden">
                     <option value="de" selected>.de</option>
                     <option value="com">.com</option>
@@ -1854,8 +2268,8 @@
                         <label class="chip"><input type="checkbox" value="1"><span class="chip-check"></span>1 字母</label>
                         <label class="chip"><input type="checkbox" value="2"><span class="chip-check"></span>2 字母</label>
                         <label class="chip"><input type="checkbox" value="3"><span class="chip-check"></span>3 字母</label>
-                        <label class="chip"><input type="checkbox" value="4" disabled><span class="chip-check"></span>4 字母 🚧</label>
-                        <label class="chip"><input type="checkbox" value="5" disabled><span class="chip-check"></span>5 字母 🚧</label>
+                        <label class="chip"><input type="checkbox" value="4" disabled><span class="chip-check"></span>4 字母 · 稍后</label>
+                        <label class="chip"><input type="checkbox" value="5" disabled><span class="chip-check"></span>5 字母 · 稍后</label>
                     </div>
                 </div>
                 <div class="form-section">
@@ -1870,7 +2284,7 @@
             <div id="config-prefix" class="hidden">
                 <div class="inline-row">
                     <div class="form-group" style="flex:0 0 72px;">
-                        <span class="form-label">前缀 <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(@=无)</span></span>
+                        <span class="form-label">前缀</span>
                         <input type="text" id="prefix" value="x" maxlength="4" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
                     </div>
                     <div class="form-group" style="flex:0 0 140px;">
@@ -1883,20 +2297,22 @@
                         </select>
                     </div>
                     <div class="form-group" style="flex:0 0 72px;">
-                        <span class="form-label">后缀 <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(@=无)</span></span>
-                        <input type="text" id="suffix" value="@" maxlength="4" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
+                        <span class="form-label">后缀</span>
+                        <input type="text" id="suffix" value="" maxlength="4" placeholder="无" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
                     </div>
                     <div class="form-group" style="flex:0 0 auto;">
                         <span class="form-label">筛选</span>
                         <div class="chip-group">
                             <label class="chip"><input type="checkbox" id="only-common" checked><span class="chip-check"></span>仅常用词</label>
+                            <label class="chip"><input type="checkbox" id="only-custom"><span class="chip-check"></span>仅自定义词</label>
                             <label class="chip"><input type="checkbox" id="use-prefix" checked><span class="chip-check"></span>前缀</label>
                             <label class="chip"><input type="checkbox" id="use-suffix" checked><span class="chip-check"></span>后缀</label>
                         </div>
                     </div>
                 </div>
                 <div class="word-info">
-                    <span id="word-count-info">📖 加载词表中...</span>
+                    <span id="word-count-info">正在加载词表…</span>
+                    <button type="button" class="btn-sort" id="btn-word-manage" onclick="openWordModal()">管理词表</button>
                 </div>
             </div>
 
@@ -1913,15 +2329,15 @@
         </div>
 
         <!-- ====== PROGRESS CARD ====== -->
-        <div class="card progress-section" id="progress-section">
+        <div class="card progress-section visible" id="progress-section">
             <div class="progress-top">
                 <!-- SVG Ring -->
                 <div class="progress-ring-wrap">
                     <svg class="progress-ring" viewBox="0 0 120 120" width="120" height="120">
                         <defs>
                             <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#00e5ff"/>
-                                <stop offset="100%" stop-color="#00e5ff"/>
+                                <stop offset="0%" stop-color="currentColor"/>
+                                <stop offset="100%" stop-color="currentColor"/>
                             </linearGradient>
                         </defs>
                         <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
@@ -1943,23 +2359,23 @@
                         <div class="stat-label">已检测</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="stat-whois" style="color:#00e5ff;">0</div>
-                        <div class="stat-label">📡 Whois 查询</div>
+                        <div class="stat-value" id="stat-whois" style="color:var(--accent);">0</div>
+                        <div class="stat-label">WHOIS 查询</div>
                     </div>
                     <div class="stat-card highlight" id="stat-found-card">
                         <div class="stat-value" id="stat-found">0</div>
-                        <div class="stat-label">✅ 可注册</div>
+                        <div class="stat-label">可注册</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="stat-elapsed">0s</div>
-                        <div class="stat-label">⏱ 耗时</div>
+                        <div class="stat-label">耗时</div>
                     </div>
                 </div>
             </div>
 
             <!-- Speed / ETA -->
             <div class="speed-bar">
-                <span id="speed-info">⏳ 准备中...</span>
+                <span id="speed-info">等待扫描</span>
                 <span id="eta-info"></span>
             </div>
 
@@ -1978,7 +2394,7 @@
                 </div>
                 <div class="results-header-right">
                     <div class="search-box">
-                        <span class="search-icon">🔍</span>
+                        <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
                         <input type="text" id="results-filter" placeholder="过滤域名..." oninput="filterResults()">
                         <button class="search-clear" id="filter-clear" onclick="clearFilter()">✕</button>
                     </div>
@@ -2001,9 +2417,9 @@
             </div>
 
             <div class="empty-state visible" id="results-empty">
-                <div class="empty-icon">🔍</div>
-                <h3>还没有找到域名</h3>
-                <p>启动一次扫描来发现可注册的短域名</p>
+                <div class="empty-icon" id="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+                <h3 id="empty-title">还没有找到域名</h3>
+                <p id="empty-desc">启动一次扫描来发现可注册的短域名</p>
             </div>
 
             <div class="results-grid" id="results-grid"></div>
@@ -2026,8 +2442,8 @@
     <svg width="0" height="0" style="position:absolute">
         <defs>
             <linearGradient id="g-accent" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#00e5ff"/>
-                <stop offset="100%" stop-color="#00e5ff"/>
+                <stop offset="0%" stop-color="currentColor"/>
+                <stop offset="100%" stop-color="currentColor"/>
             </linearGradient>
         </defs>
     </svg>
@@ -2061,7 +2477,7 @@
         // ================================================================
         function showToast(type, message, duration = 4000) {
             const container = $('toast-container');
-            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const icons = { success: '', error: '', warning: '', info: '' };
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
             toast.innerHTML = `
@@ -2110,6 +2526,99 @@
             }
         } catch (e) {}
 
+        // ── 快捷行数据源:收藏 + 最近使用 ──
+        const TLD_STAR_DEFAULTS = ["de", "com", "net", "org", "io", "xyz"];
+        let tldStars = (() => {
+            try {
+                const raw = localStorage.getItem("dc-tld-starred");
+                if (raw === null) return TLD_STAR_DEFAULTS.slice(); // 首次使用给一组默认收藏
+                const arr = JSON.parse(raw);
+                return Array.isArray(arr) ? arr.filter(t => typeof t === "string") : [];
+            } catch (e) { return TLD_STAR_DEFAULTS.slice(); }
+        })();
+        let tldRecents = (() => {
+            try {
+                const arr = JSON.parse(localStorage.getItem("dc-tld-recent") || "[]");
+                return Array.isArray(arr) ? arr.filter(t => typeof t === "string") : [];
+            } catch (e) { return []; }
+        })();
+        let tldFullOpen = false;
+        let tldSearchForcedOpen = false;
+
+        function persistTldMeta() {
+            try {
+                localStorage.setItem("dc-tld-starred", JSON.stringify(tldStars));
+                localStorage.setItem("dc-tld-recent", JSON.stringify(tldRecents));
+            } catch (e) {}
+        }
+
+        function pushRecentTld(tld) {
+            tldRecents = [tld, ...tldRecents.filter(t => t !== tld)].slice(0, 4);
+            persistTldMeta();
+        }
+
+        function isStarred(tld) { return tldStars.includes(tld); }
+
+        function toggleStarTld(tld) {
+            if (isStarred(tld)) tldStars = tldStars.filter(t => t !== tld);
+            else tldStars = [...tldStars, tld];
+            persistTldMeta();
+            injectPillStars();
+            renderTldQuick();
+        }
+
+        // 给完整列表里的每个 pill 注入收藏星标(幂等)
+        function injectPillStars() {
+            document.querySelectorAll("#tld-pills .pill").forEach(p => {
+                let star = p.querySelector(".pill-star");
+                if (!star) {
+                    star = document.createElement("span");
+                    star.className = "pill-star";
+                    star.textContent = "★";
+                    p.appendChild(star);
+                }
+                star.classList.toggle("on", isStarred(p.dataset.tld));
+            });
+        }
+
+        // 快捷行:收藏在前,最近使用补后(去重)
+        function renderTldQuick() {
+            const wrap = $("tld-quick");
+            const current = $("tld").value;
+            const quick = [...tldStars];
+            for (const t of tldRecents) {
+                if (quick.length >= 10) break;
+                if (!quick.includes(t)) quick.push(t);
+            }
+            wrap.innerHTML = "";
+            if (quick.length === 0) {
+                const hint = document.createElement("span");
+                hint.className = "qlabel";
+                hint.textContent = "点「全部后缀」选择,或在完整列表里点 ★ 收藏常用后缀";
+                wrap.appendChild(hint);
+                return;
+            }
+            for (const t of quick) {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "pill" + (t === current ? " selected" : "");
+                b.dataset.tld = t;
+                b.innerHTML = (isStarred(t) ? '<span class="qstar">★</span>' : "") + "." + t;
+                wrap.appendChild(b);
+            }
+        }
+
+        function setTldFull(open) {
+            tldFullOpen = open;
+            $("tld-full").hidden = !open;
+            const more = $("tld-more");
+            more.classList.toggle("open", open);
+            more.innerHTML = open
+                ? '收起列表 <span class="chev">▾</span>'
+                : '全部后缀 <span class="chev">▾</span>';
+            if (open) injectPillStars();
+        }
+
         function syncTldCurrent(tld) {
             const label = document.getElementById("tld-current");
             if (label) label.textContent = "." + tld;
@@ -2119,8 +2628,13 @@
             document.querySelectorAll("#tld-pills .pill").forEach(p => {
                 p.classList.toggle("selected", p.dataset.tld === tld);
             });
+            document.querySelectorAll("#tld-quick .pill").forEach(p => {
+                p.classList.toggle("selected", p.dataset.tld === tld);
+            });
             $("tld").value = tld;
             syncTldCurrent(tld);
+            pushRecentTld(tld);
+            renderTldQuick();
         }
 
         function renderTldPicker() {
@@ -2149,9 +2663,25 @@
             renderTldPicker();
         });
 
-        $("tld-search").addEventListener("input", renderTldPicker);
+        $("tld-search").addEventListener("input", () => {
+            renderTldPicker();
+            const has = $("tld-search").value.trim().length > 0;
+            // 搜索需要看到完整列表:非空自动展开,清空后恢复原状
+            if (has && !tldFullOpen) { tldSearchForcedOpen = true; setTldFull(true); }
+            if (!has && tldSearchForcedOpen) { tldSearchForcedOpen = false; setTldFull(false); }
+        });
+
+        document.getElementById("tld-more").addEventListener("click", () => {
+            tldSearchForcedOpen = false;
+            setTldFull(!tldFullOpen);
+        });
 
         document.getElementById("tld-pills").addEventListener("click", (e) => {
+            const star = e.target.closest(".pill-star");
+            if (star) {
+                toggleStarTld(star.parentElement.dataset.tld);
+                return;
+            }
             const pill = e.target.closest(".pill");
             if (!pill || pill.hidden) return;
             selectTld(pill.dataset.tld);
@@ -2163,7 +2693,15 @@
             }
         });
 
+        document.getElementById("tld-quick").addEventListener("click", (e) => {
+            const pill = e.target.closest(".pill");
+            if (!pill) return;
+            selectTld(pill.dataset.tld);
+        });
+
         renderTldPicker();
+        setTldFull(false);
+        renderTldQuick();
         syncTldCurrent($("tld").value || "de");
 
         // ================================================================
@@ -2255,6 +2793,16 @@
             setMode('prefix');
             setTimeout(loadHistory, 300);
 
+            // 前缀/后缀开关直接控制输入框可用性，留空即「无」——
+            // 取代旧版「@=无」的双轨约定
+            const syncAffix = () => {
+                $('prefix').disabled = !$('use-prefix').checked;
+                $('suffix').disabled = !$('use-suffix').checked;
+            };
+            $('use-prefix').addEventListener('change', syncAffix);
+            $('use-suffix').addEventListener('change', syncAffix);
+            syncAffix();
+
             $('prefix').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !scanningActive) startScan();
             });
@@ -2268,43 +2816,290 @@
         // ================================================================
         // WORD META
         // ================================================================
-        async function loadWordMeta() {
+        let wordMetaData = null;
+
+        async function refreshWordMeta() {
             try {
                 const resp = await authFetch('/words-meta');
-                const data = await resp.json();
-                const updateInfo = () => {
-                    const len = $('word-length').value;
-                    const onlyCommon = $('only-common').checked;
-                    const info = data[len] || { total: 0, common_count: 0 };
-                    const count = onlyCommon ? info.common_count : info.total;
-                    const useP = $('use-prefix').checked;
-                    const useS = $('use-suffix').checked;
-                    const rawP = useP ? $('prefix').value.trim().toLowerCase() : '';
-                    const rawS = useS ? $('suffix').value.trim().toLowerCase() : '';
-                    const hasPrefix = useP && rawP !== '' && rawP !== '@';
-                    const hasSuffix = useS && rawS !== '' && rawS !== '@';
-
-                    if (!hasPrefix && !hasSuffix) {
-                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（无前后缀）`;
-                    } else if (hasPrefix && !hasSuffix) {
-                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（前缀: ${rawP}）`;
-                    } else if (!hasPrefix && hasSuffix) {
-                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（后缀: ${rawS}）`;
-                    } else {
-                        $('word-count-info').textContent = `📖 ${len}字母单词共 ${info.total} 个（常用 ${info.common_count} 个），将扫描 ${count} 个域名（前缀: ${rawP}, 后缀: ${rawS}）`;
-                    }
-                };
-                updateInfo();
-                $('word-length').addEventListener('change', updateInfo);
-                $('only-common').addEventListener('change', updateInfo);
-                $('use-prefix').addEventListener('change', updateInfo);
-                $('use-suffix').addEventListener('change', updateInfo);
-                $('prefix').addEventListener('input', updateInfo);
-                $('suffix').addEventListener('input', updateInfo);
+                wordMetaData = await resp.json();
+                updateWordInfo();
             } catch (e) {
-                $('word-count-info').textContent = '⚠️ 无法加载词表';
+                $('word-count-info').textContent = '无法加载词表';
             }
         }
+
+        function updateWordInfo() {
+            if (!wordMetaData) return;
+            const len = $('word-length').value;
+            const onlyCustom = $('only-custom').checked;
+            const onlyCommon = $('only-common').checked;
+            const info = wordMetaData[len] || { total: 0, common_count: 0, custom_count: 0 };
+            const scope = onlyCustom ? `自定义词 ${info.custom_count ?? 0} 个`
+                : onlyCommon ? `单词可用 ${info.total} 个（常用 ${info.common_count} 个）`
+                : `单词可用 ${info.total} 个`;
+            const count = onlyCustom ? (info.custom_count ?? 0)
+                : onlyCommon ? info.common_count : info.total;
+            const useP = $('use-prefix').checked;
+            const useS = $('use-suffix').checked;
+            const rawP = useP ? $('prefix').value.trim().toLowerCase() : '';
+            const rawS = useS ? $('suffix').value.trim().toLowerCase() : '';
+            const hasPrefix = useP && rawP !== '' && rawP !== '@';
+            const hasSuffix = useS && rawS !== '' && rawS !== '@';
+
+            let affix = '无前后缀';
+            if (hasPrefix && hasSuffix) affix = `前缀: ${rawP}, 后缀: ${rawS}`;
+            else if (hasPrefix) affix = `前缀: ${rawP}`;
+            else if (hasSuffix) affix = `后缀: ${rawS}`;
+
+            $('word-count-info').textContent =
+                `${len}字母${scope}，将扫描 ${count} 个域名（${affix}）`;
+        }
+
+        async function loadWordMeta() {
+            await refreshWordMeta();
+            $('word-length').addEventListener('change', updateWordInfo);
+            // 「仅常用词」与「仅自定义词」互斥:勾一个自动取消另一个
+            $('only-common').addEventListener('change', () => {
+                if ($('only-common').checked) $('only-custom').checked = false;
+                updateWordInfo();
+            });
+            $('only-custom').addEventListener('change', () => {
+                if ($('only-custom').checked) $('only-common').checked = false;
+                updateWordInfo();
+            });
+            $('use-prefix').addEventListener('change', updateWordInfo);
+            $('use-suffix').addEventListener('change', updateWordInfo);
+            $('prefix').addEventListener('input', updateWordInfo);
+            $('suffix').addEventListener('input', updateWordInfo);
+        }
+
+        // ================================================================
+        // WORD MODAL — 词表管理(查看/搜索/停用/添加自定义/恢复默认)
+        // ================================================================
+        let wmItems = [];
+        let wmMeta = {};
+        let wmFilter = "all";
+
+        function openWordModal() {
+            $("word-modal").hidden = false;
+            $("wm-length").value = $("word-length").value;
+            wmLoad();
+        }
+
+        function closeWordModal() {
+            $("word-modal").hidden = true;
+            // 面板里切过词长的话,同步回扫描表单
+            if ($("wm-length").value !== $("word-length").value) {
+                $("word-length").value = $("wm-length").value;
+                $("word-length").dispatchEvent(new Event("change"));
+            }
+        }
+
+        async function wmLoad() {
+            const len = $("wm-length").value;
+            $("wm-length-label").textContent = "· " + len + " 字母";
+            $("wm-add-input").placeholder = "添加自定义 " + len + " 字母单词";
+            try {
+                const resp = await authFetch(`/words/${len}/manage`);
+                wmMeta = await resp.json();
+                wmItems = wmMeta.items || [];
+                // 默认全部按首字母收起,只留一行组头作概览
+                wmCollapsed = new Set(wmItems.map(i => i.w[0].toUpperCase()));
+                wmRender();
+            } catch (e) {
+                $("wm-stats").textContent = "词表加载失败";
+            }
+        }
+
+        async function wmPost(body) {
+            const len = $("wm-length").value;
+            try {
+                const resp = await authFetch(`/words/${len}/manage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                });
+                wmMeta = await resp.json();
+                wmItems = wmMeta.items || [];
+                wmRender();
+                refreshWordMeta(); // 同步表单里的「将扫描 N 个域名」
+            } catch (e) {
+                showToast("error", "保存失败: " + e.message);
+            }
+        }
+
+        const WM_GROUP_THRESHOLD = 60; // 词数不超过该值则平铺,不分字母组
+        let wmCollapsed = new Set();   // 处于收起状态的首字母
+
+        function wmMakeChip(it) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "wchip"
+                + (it.common ? " common" : "")
+                + (it.added ? " added" : "")
+                + (it.disabled ? " off" : "");
+            b.dataset.w = it.w;
+            b.title = it.disabled ? "点击启用" : "点击停用";
+            b.innerHTML = '<span class="dotc"></span>' + it.w
+                + (it.added ? ' <span class="wmx" title="删除自定义词">×</span>' : "");
+            return b;
+        }
+
+        function updateWmExpandAll() {
+            const btn = $("wm-expand-all");
+            const grouped = wmItems.length > WM_GROUP_THRESHOLD;
+            const forceOpen = ($("wm-search").value || "").trim() || wmFilter !== "all";
+            btn.hidden = !grouped || !!forceOpen;
+            if (!btn.hidden) {
+                btn.textContent = wmCollapsed.size ? "全部展开" : "全部收起";
+            }
+        }
+
+        function wmRender() {
+            const len = $("wm-length").value;
+            const m = wmMeta;
+            const disabledCount = wmItems.filter(i => i.disabled).length;
+            const addedCount = wmItems.filter(i => i.added).length;
+            $("wm-length-label").textContent = "· " + len + " 字母";
+            $("wm-stats").textContent =
+                `可用 ${m.enabled_total ?? "?"} / 共 ${m.total ?? "?"} · 常用 ${m.enabled_common ?? "?"} · 已停用 ${disabledCount} · 自定义 ${addedCount}`;
+
+            const q = ($("wm-search").value || "").trim().toLowerCase();
+            const chips = $("wm-chips");
+            const prevScroll = chips.scrollTop;
+
+            // 过滤
+            const matched = wmItems.filter(it => {
+                if (wmFilter === "common" && !it.common) return false;
+                if (wmFilter === "uncommon" && it.common) return false;
+                if (wmFilter === "disabled" && !it.disabled) return false;
+                if (wmFilter === "added" && !it.added) return false;
+                if (q && !it.w.includes(q)) return false;
+                return true;
+            });
+
+            // 搜索/过滤时强制展开所有组,避免匹配结果被折叠藏住
+            const forceOpen = !!q || wmFilter !== "all";
+            const grouped = wmItems.length > WM_GROUP_THRESHOLD;
+
+            chips.innerHTML = "";
+            let shown = 0;
+
+            if (!grouped) {
+                for (const it of matched) {
+                    chips.appendChild(wmMakeChip(it));
+                    shown += 1;
+                }
+            } else {
+                // 按首字母分组,A→Z;组内保持原顺序(常用在前)
+                const groups = new Map();
+                for (const it of matched) {
+                    const letter = it.w[0].toUpperCase();
+                    if (!groups.has(letter)) groups.set(letter, []);
+                    groups.get(letter).push(it);
+                }
+                for (const [letter, items] of groups) {
+                    shown += items.length;
+                    const g = document.createElement("div");
+                    g.className = "wgroup";
+                    g.dataset.letter = letter;
+                    const collapsed = !forceOpen && wmCollapsed.has(letter);
+                    const head = document.createElement("button");
+                    head.type = "button";
+                    head.className = "wgroup-head" + (collapsed ? "" : " open");
+                    head.innerHTML =
+                        `<span class="chev">▶</span>` +
+                        `<span class="wgroup-letter">${letter}</span>` +
+                        `<span class="wgroup-count">${items.length} 个</span>`;
+                    const body = document.createElement("div");
+                    body.className = "wgroup-body";
+                    body.hidden = collapsed;
+                    for (const it of items) body.appendChild(wmMakeChip(it));
+                    g.appendChild(head);
+                    g.appendChild(body);
+                    chips.appendChild(g);
+                }
+            }
+
+            if (shown === 0) {
+                chips.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">没有匹配的单词</span>';
+            } else {
+                chips.scrollTop = prevScroll; // 保持滚动位置(停用/启用单个词后不跳顶)
+            }
+            updateWmExpandAll();
+        }
+
+        // 点组头 = 折叠/展开该字母组(原地切换,不重渲染)
+        // 点词 = 停用/启用切换;点 × = 删除自定义词
+        $("wm-chips").addEventListener("click", (e) => {
+            const head = e.target.closest(".wgroup-head");
+            if (head) {
+                const group = head.parentElement;
+                const body = group.querySelector(".wgroup-body");
+                const nowCollapsed = !body.hidden;
+                body.hidden = nowCollapsed;
+                head.classList.toggle("open", !nowCollapsed);
+                if (nowCollapsed) wmCollapsed.add(group.dataset.letter);
+                else wmCollapsed.delete(group.dataset.letter);
+                updateWmExpandAll();
+                return;
+            }
+            const chip = e.target.closest(".wchip");
+            if (!chip) return;
+            const w = chip.dataset.w;
+            const item = wmItems.find(i => i.w === w);
+            if (!item) return;
+            if (e.target.classList.contains("wmx")) {
+                wmPost({ remove_added: [w] });
+                return;
+            }
+            wmPost(item.disabled ? { enable: [w] } : { disable: [w] });
+        });
+
+        $("wm-filters").addEventListener("click", (e) => {
+            const btn = e.target.closest(".btn-sort");
+            if (!btn) return;
+            wmFilter = btn.dataset.wf;
+            document.querySelectorAll("#wm-filters .btn-sort")
+                .forEach(b => b.classList.toggle("active", b === btn));
+            wmRender();
+        });
+
+        $("wm-search").addEventListener("input", wmRender);
+        $("wm-length").addEventListener("change", wmLoad);
+
+        // 全部展开/收起:有任一组收起时按钮为「全部展开」
+        $("wm-expand-all").addEventListener("click", () => {
+            if (wmCollapsed.size) wmCollapsed.clear();
+            else wmItems.forEach(it => wmCollapsed.add(it.w[0].toUpperCase()));
+            wmRender();
+        });
+
+        function wmAdd() {
+            const input = $("wm-add-input");
+            const len = parseInt($("wm-length").value, 10);
+            const w = (input.value || "").trim().toLowerCase();
+            if (!/^[a-z]+$/.test(w)) { showToast("warning", "只能包含字母 a-z"); return; }
+            if (w.length !== len) { showToast("warning", `需要正好 ${len} 个字母`); return; }
+            wmPost({ add: [w] });
+            input.value = "";
+        }
+
+        async function wmReset() {
+            const len = $("wm-length").value;
+            if (!confirm(`恢复 ${len} 字母词表的默认配置?(停用与自定义词都会清空)`)) return;
+            await wmPost({ reset: true });
+        }
+
+        $("wm-add-input").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") wmAdd();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !$("word-modal").hidden) closeWordModal();
+        });
+        $("word-modal").addEventListener("click", (e) => {
+            if (e.target === $("word-modal")) closeWordModal();
+        });
 
         // ================================================================
         // RESTORE FROM LOCALSTORAGE
@@ -2322,7 +3117,7 @@
                 const timeStr = new Date(data.timestamp).toLocaleTimeString('zh-CN');
 
                 $('restore-text').textContent =
-                    `📋 上次扫描 (.${tld}) 在 ${timeStr} 完成，找到 ${count} 个可注册域名`;
+                    `上次扫描 (.${tld}) 在 ${timeStr} 完成，找到 ${count} 个可注册域名`;
                 $('restore-banner').classList.add('visible');
 
                 if (data.domains && data.domains.length > 0) {
@@ -2371,7 +3166,7 @@
             $('results-empty').classList.remove('visible');
             $('scanning-hint').classList.add('visible');
             $('btn-start').disabled = true;
-            $('btn-start').innerHTML = '⏳ 扫描中...';
+            $('btn-start').innerHTML = '扫描中…';
             $('btn-cancel').classList.remove('hidden');
 
             const resp = await authFetch(`/scan/results/${currentScanId}`);
@@ -2402,7 +3197,7 @@
                 const timeStr = new Date(data.timestamp * 1000).toLocaleTimeString('zh-CN');
 
                 $('restore-text').textContent =
-                    `📋 上次扫描 (.${data.tld}) 在 ${timeStr} 完成，找到 ${count} 个可注册域名`;
+                    `上次扫描 (.${data.tld}) 在 ${timeStr} 完成，找到 ${count} 个可注册域名`;
                 $('restore-banner').classList.add('visible');
 
                 renderAllResults(data.domains, false);
@@ -2425,8 +3220,9 @@
                 const prefix = (useP && rawP !== '' && rawP !== '@') ? rawP : '';
                 const suffix = (useS && rawS !== '' && rawS !== '@') ? rawS : '';
                 const wordLength = parseInt($('word-length').value);
-                const onlyCommon = $('only-common').checked;
-                return { mode: 'prefix_word', tld, prefix, suffix, word_length: wordLength, only_common: onlyCommon };
+                const onlyCustom = $('only-custom').checked;
+                const onlyCommon = $('only-common').checked && !onlyCustom;
+                return { mode: 'prefix_word', tld, prefix, suffix, word_length: wordLength, only_common: onlyCommon, only_custom: onlyCustom };
             }
 
             const lengths = Array.from(
@@ -2440,6 +3236,13 @@
             if (cfg.mode === 'brute' && (!cfg.lengths || cfg.lengths.length === 0)) {
                 showToast('warning', '请至少选择一个域名长度');
                 return false;
+            }
+            if (cfg.mode === 'prefix_word' && cfg.only_custom) {
+                const info = (wordMetaData || {})[cfg.word_length] || {};
+                if (!info.custom_count) {
+                    showToast('warning', `${cfg.word_length} 字母词表还没有自定义词，请先在「管理词表」中添加`);
+                    return false;
+                }
             }
             return true;
         }
@@ -2460,7 +3263,7 @@
 
             // Reset UI
             $('btn-start').disabled = true;
-            $('btn-start').innerHTML = '⏳ 扫描中...';
+            $('btn-start').innerHTML = '扫描中…';
             $('btn-cancel').classList.remove('hidden');
             $('progress-section').classList.add('visible');
             $('results-area').classList.add('visible');
@@ -2473,7 +3276,7 @@
             $('stat-whois').textContent = '0';
             $('stat-found').textContent = '0';
             $('stat-elapsed').textContent = '0s';
-            $('speed-info').textContent = '⏳ 准备中...';
+            $('speed-info').textContent = '准备中…';
             $('eta-info').textContent = '';
             $('stat-found-card').classList.remove('has-results');
 
@@ -2548,7 +3351,7 @@
 
                 if (elapsed > 0.5 && checked > 0) {
                     const speed = (checked / elapsed).toFixed(1);
-                    $('speed-info').textContent = `⚡ ~${speed} 域名/秒`;
+                    $('speed-info').textContent = `~${speed} 域名/秒`;
                     if (checked < total && speed > 0) {
                         const remaining = total - checked;
                         const eta = Math.ceil(remaining / parseFloat(speed));
@@ -2575,19 +3378,16 @@
                 $('stat-found-card').classList.add('has-results');
 
                 // Confetti on first find
-                if (foundDomains.length === 1) {
-                    spawnConfetti(30);
-                }
             });
 
             eventSource.addEventListener('ratelimit', (e) => {
                 const data = JSON.parse(e.data);
-                showToast('warning', `⚠️ 检测到限流，自动降速至每批间隔 ${data.sleep}s`, 3000);
+                showToast('warning', `检测到限流，自动降速至每批间隔 ${data.sleep}s`, 3000);
             });
 
             eventSource.addEventListener('retry', (e) => {
                 const data = JSON.parse(e.data);
-                showToast('warning', `⚠️ ${data.count} 个域名因限流未能确认，等待 ${data.wait}s 后自动复检`, 5000);
+                showToast('warning', `${data.count} 个域名因限流未能确认，等待 ${data.wait}s 后自动复检`, 5000);
             });
 
             eventSource.addEventListener('done', (e) => {
@@ -2601,10 +3401,16 @@
                 if (data.cancelled) {
                     showToast('warning', '扫描已停止');
                     loadHistory();
+                    if (foundDomains.length === 0) {
+                        setEmptyState('stopped-zero', { checked: data.total_checked });
+                    }
                 } else {
                     const count = data.available_count || foundDomains.length;
                     showToast('success', `扫描完成！共检测 ${data.total_checked} 个域名，找到 ${count} 个可注册域名`);
-                    if (count > 0) spawnConfetti(60);
+                    if (count === 0) {
+                        setEmptyState('zero', { total: data.total_checked });
+                    }
+                    loadHistory();
                 }
 
                 $('stat-elapsed').textContent = (data.elapsed || 0) + 's';
@@ -2665,7 +3471,7 @@
                 </div>
                 <div class="domain-card-meta">
                     <span class="domain-length">${len} 字母</span>
-                    <span class="domain-status just-found">✨ 发现</span>
+                    <span class="domain-status just-found">发现</span>
                 </div>
                 <div class="domain-card-actions">
                     <button class="btn-icon" title="复制" onclick="event.stopPropagation();copyDomain('${domain}', this)">
@@ -2772,6 +3578,32 @@
             if (n < 1 || n > totalPages || n === currentPage) return;
             currentPage = n;
             renderCurrentPage();
+        }
+
+        // ================================================================
+        // EMPTY STATE（区分「从未扫描」与「扫完但全部已注册」）
+        // ================================================================
+        function setEmptyState(mode, info = {}) {
+            const icon = $('empty-icon');
+            const title = $('empty-title');
+            const desc = $('empty-desc');
+            if (mode === 'zero') {
+                icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>';
+                title.textContent = '本轮未发现可注册域名';
+                desc.textContent = info.total
+                    ? `已检测 ${info.total} 个候选，全部已被注册。试试换一组长度或前后缀。`
+                    : '全部候选均已被注册，试试换一组长度或前后缀。';
+            } else if (mode === 'stopped-zero') {
+                icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+                title.textContent = '扫描已停止，未发现可注册域名';
+                desc.textContent = info.checked
+                    ? `已检测 ${info.checked} 个候选，可换个思路重新扫`
+                    : '可调整参数后重新扫描';
+            } else {
+                icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
+                title.textContent = '还没有找到域名';
+                desc.textContent = '启动一次扫描来发现可注册的短域名';
+            }
         }
 
         // ================================================================
@@ -2925,26 +3757,6 @@
         // ================================================================
         // CONFETTI
         // ================================================================
-        function spawnConfetti(count = 40) {
-            const container = $('confetti-container');
-            const colors = ['#00e5ff', '#10b981', '#f59e0b', '#ef4444', '#ff6bcb', '#38bdf8', '#a78bfa', '#f472b6'];
-
-            for (let i = 0; i < count; i++) {
-                const piece = document.createElement('div');
-                piece.className = 'confetti-piece';
-                piece.style.left = Math.random() * 100 + '%';
-                piece.style.top = -(Math.random() * 20 + 10) + 'px';
-                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                piece.style.width = (Math.random() * 8 + 6) + 'px';
-                piece.style.height = (Math.random() * 8 + 6) + 'px';
-                piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                piece.style.animationDelay = Math.random() * 0.8 + 's';
-                piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                container.appendChild(piece);
-
-                setTimeout(() => piece.remove(), 3500);
-            }
-        }
 
         // ================================================================
         // CONNECTION STATUS
@@ -2990,7 +3802,7 @@
             const btn = $('btn-cancel');
             if (btn.disabled) return; // 防止重复点击
             btn.disabled = true;
-            btn.textContent = '⏳ 正在停止...';
+            btn.textContent = '正在停止…';
             try {
                 await authFetch(`/scan/cancel/${currentScanId}`, { method: 'POST' });
             } catch (err) {
@@ -3001,7 +3813,7 @@
             scanningActive = false;
             currentScanId = null;
             // 已找到的域名保留在结果区(历史侧栏也会留下这条记录)
-            $('progress-section').classList.remove('visible');
+            // 进度卡保持常显,保留停止时的进度供参考
             $('scanning-hint').classList.remove('visible');
             $('results-area').classList.toggle('visible', foundDomains.length > 0);
             if (foundDomains.length > 0) {
@@ -3035,7 +3847,7 @@
             const banner = $('incremental-banner');
             const text = $('incremental-text');
             const pct = fullCount > 0 ? Math.round(skipped / fullCount * 100) : 0;
-            text.textContent = `⚡ 增量复检：跳过 ${skipped} 个已知注册域名（${pct}%），仅复检 ${recheckCount} 个`;
+            text.textContent = `增量复检：跳过 ${skipped} 个已知注册域名（${pct}%），仅复检 ${recheckCount} 个`;
             banner.classList.add('visible');
             // auto dismiss after 12s
             clearTimeout(banner._timer);
@@ -3110,7 +3922,7 @@
                                 <span class="hi-count">${item.available_count ?? 0}</span>
                                 <span>可注册</span>
                             </div>
-                            <button class="history-item-delete" title="删除" onclick="event.stopPropagation();deleteHistoryItem(${item.id})">🗑</button>
+                            <button class="history-item-delete" title="删除" onclick="event.stopPropagation();deleteHistoryItem(${item.id})">×</button>
                         </div>
                     `;
                     listEl.appendChild(el);
@@ -3150,7 +3962,7 @@
 
             // Open this detail, un-collapse its parent item
             detailEl.classList.add('open');
-            detailEl.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);">⏳ 加载中...</div>';
+            detailEl.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);">加载中…</div>';
             const parentItem = listEl.querySelector(`.history-item[data-id="${id}"]`);
             if (parentItem) parentItem.classList.remove('collapsed');
             detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3170,7 +3982,7 @@
                 detailEl.innerHTML = `
                     <div class="history-detail-header">
                         <span>${escapeHtml(rec.summary || '')}</span>
-                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();copyAllFromHistory(${id})">📋 复制全部</button>
+                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();copyAllFromHistory(${id})">复制全部</button>
                     </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
                         ${rec.total || 0} 候选 → ${avail.length} 可注册
@@ -3257,7 +4069,7 @@
 
         function updateThemeIcon(theme) {
             const icon = $('theme-icon');
-            if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+            if (icon) icon.innerHTML = theme === 'dark' ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
         }
 
         // ================================================================

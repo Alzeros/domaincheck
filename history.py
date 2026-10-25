@@ -75,7 +75,7 @@ def make_query_key(mode: str, params: dict) -> str:
     同样的输入必然得到同样的 key,从而判定"这是否是重复查询"。
     """
     if mode == "prefix_word":
-        return "|".join([
+        key = "|".join([
             "pw",
             str(params.get("tld", "")),
             str(params.get("prefix", "")),
@@ -83,6 +83,11 @@ def make_query_key(mode: str, params: dict) -> str:
             str(params.get("word_length", "")),
             "1" if params.get("only_common") else "0",
         ])
+        # 仅自定义扫描是不同的查询目标;只在开启时附加,
+        # 避免旧历史键全部失配(丢失增量复检的命中)
+        if params.get("only_custom"):
+            key += "|custom"
+        return key
     # brute
     lengths = sorted(params.get("lengths", []))
     return "|".join([
