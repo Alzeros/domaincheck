@@ -3,6 +3,7 @@
 import asyncio
 import socket
 import time
+import uuid
 from typing import Optional
 
 import aiohttp
@@ -101,6 +102,71 @@ WHOIS_FIRST_TLDS: set[str] = set()
 # whois.nic.cv 无响应，.cv 只能走 RDAP
 NO_WHOIS_TLDS = {"cv"}
 
+# ── whois 原始回复的文本特征 ──────────────────────────────
+# 「确定未注册」的文案（小写子串匹配）。宁缺毋滥：加错一条就会
+# 制造误报（把已注册判成可注册），所以只收录确认过的措辞。
+WHOIS_FREE_MARKERS: tuple[str, ...] = (
+    "no match for",                 # Verisign 系(.com/.net/.cc)
+    "no matching record",           # CNNIC(.cn)
+    "no matches",                   # 多数注册局
+    "not found",                    # 通用
+    "no entries found",             # DENIC(.de)
+    "no data found",
+    "no object found",
+    "domain not found",
+    "status: free",                 # DENIC
+    "status: available",
+    "not registered",
+    "is free",                      # SIDN(.nl) 旧格式
+    "available for registration",   # Radix——匹配前先排除 "not available"
+)
+
+# 「限流/封禁/服务错误」文案。命中即视为查询失败(None)。这类回复
+# 绝不能流到「未注册」的判定上——此前误报可注册的根源就是它们被
+# 当成了「解析不出域名 = 可注册」。
+# 注意:不能收录会撞上注册局样板条款的词。例如 Verisign 给每条
+# .com/.net/.cc 回复都附带 TERMS OF USE,固定含 "not authorized",
+# 收录它会把真正的未注册回复全打成「不确定」。"access denied" 同理
+# ——拒绝访问的回复不含任何未注册特征,自然落到 None,无需专门识别。
+WHOIS_ERROR_MARKERS: tuple[str, ...] = (
+    "quota",
+    "exceeded",
+    "rate limit",
+    "query limit",
+    "too many",
+    "slow down",
+    "try again",
+    "please wait",
+    "temporarily",
+    "service unavailable",
+    "blocked",
+    "banned",
+    "error:",
+)
+
+
+def _classify_whois_text(text: str) -> Optional[bool]:
+    """从 whois 原始回复文本判定注册状态。
+
+    只有文本给出正面证据才返回 True(已注册)/False(可注册)；
+    空回复、限流/错误文案、无法识别的格式一律返回 None(不确定)，
+    由上层进入冷却复检，而不是冒进地标成可注册。
+    """
+    lowered = (text or "").lower()
+    if not lowered.strip():
+        return None
+    if any(m in lowered for m in WHOIS_ERROR_MARKERS):
+        return None
+    # Radix 的「not available」包含「available」子串，必须先判否定形
+    if "not available for registration" in lowered:
+        return True
+    if any(m in lowered for m in WHOIS_FREE_MARKERS):
+        return False
+    # 常见注册局的已注册回复都带 "Domain Name:" 字段
+    if "domain name:" in lowered:
+        return True
+    return None
+
 # whois 限速（按 TLD 维度，单位：次/秒）
 TLD_QUERY_RATE: dict[str, float] = {
     "tech": 1.0,   # whois.nic.tech 约 90 次/分钟后限流
@@ -183,8 +249,45 @@ def _rdap_host(tld: str) -> str:
 
 # ── 1. DNS 预检 ──────────────────────────────────────────
 
+# 解析器可信度缓存:部分 ISP/路由器会对 NXDOMAIN 劫持返回假 IP,
+# 这类网络里 DNS 预检会把未注册域名误判成已注册。用一个 RFC 6761
+# 保留的 .invalid 域名做哨兵:正经解析器对它必须返回 NXDOMAIN,
+# 它若能解析 → 本机解析器被劫持 → 禁用 DNS 预检,全部走注册局查询。
+_dns_sane: Optional[bool] = None
+_dns_sane_until: float = 0.0
+_dns_sane_lock: Optional[asyncio.Lock] = None  # 惰性创建,避免 import 时绑定事件循环
+_DNS_SANITY_TTL = 600.0
+
+
+async def _resolver_is_sane() -> bool:
+    """探测本机解析器是否可信,结果缓存 10 分钟。"""
+    global _dns_sane, _dns_sane_until, _dns_sane_lock
+    loop = asyncio.get_running_loop()
+    if _dns_sane is not None and loop.time() < _dns_sane_until:
+        return _dns_sane
+    if _dns_sane_lock is None:
+        _dns_sane_lock = asyncio.Lock()
+    async with _dns_sane_lock:
+        if _dns_sane is not None and loop.time() < _dns_sane_until:
+            return _dns_sane
+        probe = f"dc-sanity-{uuid.uuid4().hex[:10]}.invalid"
+        try:
+            await loop.getaddrinfo(
+                probe, 80, family=socket.AF_INET, type=socket.SOCK_STREAM
+            )
+            _dns_sane = False
+            print("[DNS] 哨兵域名也能解析 → 本机存在 NXDOMAIN 劫持,跳过 DNS 预检")
+        except (socket.gaierror, OSError):
+            _dns_sane = True
+        _dns_sane_until = loop.time() + _DNS_SANITY_TTL
+        return _dns_sane
+
+
 async def dns_precheck(domain: str) -> bool:
-    """DNS 快速预检。True = 已解析（高概率已注册）。"""
+    """DNS 快速预检。True = 已解析（高概率已注册）。
+   解析器被劫持时恒返回 False,让域名走后面的注册局权威查询。"""
+    if not await _resolver_is_sane():
+        return False
     try:
         await asyncio.get_event_loop().getaddrinfo(
             domain, 80, family=socket.AF_INET, type=socket.SOCK_STREAM
@@ -231,40 +334,34 @@ async def check_rdap(session: aiohttp.ClientSession, tld: str, domain: str) -> O
 
 def check_whois_lib(domain: str) -> Optional[bool]:
     """python-whois 库查询。
-   返回 True=已注册, False=可注册, None=无法判断。"""
+   返回 True=已注册, False=可注册, None=无法判断。
+
+   关键约束:解析失败(限流/空回复/未知格式)绝不判成「可注册」。
+   此前的 bug 是 domain_name 解析不出来就返回 False(可注册),
+   批量扫描一遇限流,整批已注册域名全被误报成可注册。"""
     try:
         w = whois.whois(domain)
-        if w.domain_name is None:
-            return False
-        if isinstance(w.domain_name, list):
-            if len(w.domain_name) == 0:
-                return False
-        return True
     except whois.WhoisError as e:
-        # python-whois 在域名未注册时抛 WhoisDomainNotFoundError（WhoisError 子类），
-        # 但各注册局的文案不同，必须覆盖多种措辞，否则会被当成「查询失败」
-        # 而误判为不可注册。例如 .cn 的 CNNIC 回复 "No matching record."，
-        # .de 的 DENIC 回复 "Status: free"。
-        msg = str(e)
-        lowered = msg.lower()
-        if ("no match for" in lowered
-                or "no matching record" in lowered
-                or "no matches" in lowered
-                or "not found" in lowered
-                or "no entries found" in lowered
-                or "status: free" in lowered
-                or "status: available" in lowered):
-            return False
-        return None
+        # 各 TLD 解析器确认「未注册」时会抛 WhoisDomainNotFoundError
+        # (WhoisError 子类),但注册局文案各异;其余 WhoisError(配额等)
+        # 的报错文本同样先过错误特征筛查
+        return False if _classify_whois_text(str(e)) is False else None
     except Exception:
         return None
+
+    name = w.domain_name
+    if name is None or (isinstance(name, list) and len(name) == 0):
+        # 解析不出 ≠ 可注册:拿原始回复文本兜底,只有出现明确的
+        # 未注册文案才判可注册,其余(限流/空/未知格式)返回 None
+        return _classify_whois_text(getattr(w, "text", "") or "")
+    return True
 
 
 # ── 4. Whois 直接 Socket 查询（针对 DENIC 等特殊服务器） ──
 
 async def check_whois_socket(cfg: Config, domain: str) -> Optional[bool]:
     """直接 TCP 连接 whois 服务器查询（绕过 python-whois 的解析层）。
-   针对 whois.denic.de 等特殊格式优化，同时兼容 Radix(.tech) 的回复。"""
+    针对 whois.denic.de 等特殊格式优化，同时兼容 Radix(.tech) 的回复。"""
     whois_host = f"whois.nic.{cfg.tld}"  # 通用模式
     if cfg.tld == "de":
         whois_host = "whois.denic.de"
@@ -281,29 +378,38 @@ async def check_whois_socket(cfg: Config, domain: str) -> Optional[bool]:
         writer.write(query.encode())
         await writer.drain()
 
-        data = await asyncio.wait_for(reader.read(8192), timeout=cfg.timeout)
+        # 读到服务器关闭连接为止。单次 read(8192) 可能只拿到半截回复，
+        # 半截回复若恰好缺少已注册特征会被误判，所以循环读完整。
+        # 总预算 = cfg.timeout；个别服务器发完不关连接，超时就把已收到的
+        # 当作完整回复处理。256KB 为防御上限。
+        chunks: list[bytes] = []
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + cfg.timeout
+        while True:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                break
+            try:
+                chunk = await asyncio.wait_for(reader.read(65536), timeout=remaining)
+            except asyncio.TimeoutError:
+                break
+            if not chunk:
+                break
+            chunks.append(chunk)
+            if sum(len(c) for c in chunks) >= 262144:
+                break
         writer.close()
         await writer.wait_closed()
 
-        response = data.decode("utf-8", errors="ignore")
+        response = b"".join(chunks).decode("utf-8", errors="ignore")
+        result = _classify_whois_text(response)
+        if result is not None:
+            return result
+        # DENIC 等使用 "Domain:" + "Status:"（而非 "Domain Name:"）的格式，
+        # 两者同现视为已注册。需在小写文本上匹配——此前对原始文本匹配，
+        # DENIC 回复首字母大写导致这条启发式从未生效过
         lowered = response.lower()
-
-        # Radix(.tech)：「>>> Domain x.tech is available for registration」
-        # 注意先判断 "not available"，它包含 "available" 子串
-        if "not available for registration" in lowered:
-            return True
-        if "available for registration" in lowered:
-            return False
-        # DENIC 特征
-        if "status: free" in lowered:
-            return False
-        if "no entries found" in lowered or "not found" in lowered or "no match for" in lowered:
-            return False
-        # 常见注册局：已注册域名都带 "Domain Name:"
-        if "domain name:" in lowered:
-            return True
-        if "domain:" in response and "status:" in response:
-            # 有 Domain 和 Status 行 → 大概率已注册
+        if "domain:" in lowered and "status:" in lowered:
             return True
         # 其他情况保守
         return None
