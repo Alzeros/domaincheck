@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DomainChecker — 短域名注册检测</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#0b0b0d">
     <style>
         /* ================================================================
            CSS DESIGN SYSTEM — Custom Properties & Reset
@@ -16,17 +20,17 @@
             --bg-input: #0f0f12;
             --border-subtle: rgba(255,255,255,0.06);
             --border-card: rgba(255,255,255,0.09);
-            --border-active: rgba(110,127,243,0.55);
+            --border-active: rgba(224,164,88,0.55);
             --text-primary: #f4f4f5;
             --text-secondary: #b6b6bf;
             --text-muted: #77777f;
-            --accent: #6e7ff3;
-            --accent-glow: rgba(110,127,243,0.14);
-            --accent2: #6e7ff3;
-            --accent2-glow: rgba(110,127,243,0.12);
+            --accent: #e0a458;
+            --accent-glow: rgba(224,164,88,0.14);
+            --accent2: #e0a458;
+            --accent2-glow: rgba(224,164,88,0.12);
             --success: #3ecf8e;
             --success-glow: rgba(62,207,142,0.12);
-            --warning: #d29922;
+            --warning: #dd8556;
             --error: #f47067;
             --radius-sm: 6px;
             --radius-md: 8px;
@@ -51,17 +55,17 @@
             --bg-input: #f4f4f5;
             --border-subtle: rgba(0,0,0,0.07);
             --border-card: rgba(0,0,0,0.10);
-            --border-active: rgba(91,106,219,0.55);
+            --border-active: rgba(169,123,59,0.55);
             --text-primary: #18181b;
             --text-secondary: #52525b;
             --text-muted: #a1a1aa;
-            --accent: #5b6adb;
-            --accent-glow: rgba(91,106,219,0.12);
-            --accent2: #5b6adb;
-            --accent2-glow: rgba(91,106,219,0.10);
+            --accent: #a97b3b;
+            --accent-glow: rgba(169,123,59,0.12);
+            --accent2: #a97b3b;
+            --accent2-glow: rgba(169,123,59,0.10);
             --success: #1a7f37;
             --success-glow: rgba(26,127,55,0.12);
-            --warning: #9a6700;
+            --warning: #b95c22;
             --error: #cf222e;
             --shadow-sm: none;
             --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
@@ -92,9 +96,9 @@
             width: 200%;
             height: 200%;
             background:
-                radial-gradient(ellipse at 30% 0%, rgba(110,127,243,0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 70% 0%, rgba(110,127,243,0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(110,127,243,0.03) 0%, transparent 50%);
+                radial-gradient(ellipse at 30% 0%, rgba(224,164,88,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 0%, rgba(224,164,88,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(224,164,88,0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
@@ -225,7 +229,7 @@
             letter-spacing: -0.03em;
             line-height: 1.2;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #ffffff 0%, #6e7ff3 40%, #6e7ff3 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #e0a458 40%, #e0a458 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -270,6 +274,26 @@
         .hero-badge .dot.green { background: var(--success); box-shadow: 0 0 5px var(--success-glow); }
         .hero-badge .dot.blue { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
         .hero-badge .dot.cyan { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
+
+        .accent-picker {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .accent-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 1px solid var(--border-card);
+            cursor: pointer;
+            padding: 0;
+            transition: transform var(--transition-fast);
+        }
+        .accent-dot:hover { transform: scale(1.2); }
+        .accent-dot.active {
+            outline: 2px solid var(--text-primary);
+            outline-offset: 2px;
+        }
 
         .theme-toggle {
             display: inline-flex;
@@ -335,8 +359,8 @@
             justify-content: space-between;
             gap: 12px;
             padding: 12px 18px;
-            background: rgba(110,127,243,0.06);
-            border: 1px solid rgba(110,127,243,0.2);
+            background: rgba(224,164,88,0.06);
+            border: 1px solid rgba(224,164,88,0.2);
             border-radius: var(--radius-md);
             margin-bottom: 12px;
             font-size: 13px;
@@ -446,7 +470,7 @@
             font-weight: 600;
         }
         .hi-tag.brute {
-            background: rgba(110,127,243,0.1);
+            background: rgba(224,164,88,0.1);
             color: var(--accent);
         }
         .hi-tag.prefix {
@@ -628,9 +652,10 @@
         }
         .tld-bar {
             display: flex;
-            align-items: flex-end;
-            gap: 16px;
-            margin: 8px 0 12px;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0 14px;
+            padding-bottom: 10px;
             border-bottom: 1px solid var(--border-subtle);
         }
         .tld-quick {
@@ -639,17 +664,47 @@
             gap: 6px;
             flex: 1;
             min-width: 0;
-            padding-bottom: 8px;
+            align-items: center;
         }
-        .tld-quick .pill { padding: 6px 14px; font-size: 13px; }
-        .tld-quick .pill .qstar { color: var(--warning); margin-right: 2px; font-size: 11px; }
+        .tld-quick .pill { padding: 5px 13px; font-size: 13px; position: relative; }
+        .tld-quick .pill .qstar { display: none; }
+        .tld-quick .pill .qremove {
+            position: absolute;
+            top: -6px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-card);
+            color: var(--text-muted);
+            font-size: 10px;
+            line-height: 12px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        .tld-quick .pill:hover .qremove { opacity: 1; }
+        .tld-quick .pill .qremove:hover {
+            color: var(--error);
+            border-color: var(--error);
+        }
         .tld-quick .qlabel {
             align-self: center;
             font-size: 12px;
             color: var(--text-muted);
             white-space: nowrap;
         }
-        #tld-more { margin-bottom: 6px; }
+        #tld-more {
+            margin: 0;
+            padding: 5px 12px;
+            border: 1px solid var(--border-card);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        #tld-more:hover { color: var(--text-primary); border-color: var(--border-hover); }
         #tld-more .chev { display: inline-block; transition: transform var(--transition-fast); }
         #tld-more.open .chev { transform: rotate(180deg); }
         #tld-full { margin-top: 4px; }
@@ -674,6 +729,7 @@
             gap: 2px;
             min-width: 0;
             overflow-x: auto;
+            margin-bottom: 12px;
         }
         .tld-tab {
             appearance: none;
@@ -693,19 +749,19 @@
             border-bottom-color: var(--accent);
         }
         .tld-search {
-            width: 108px;
-            margin-left: auto;
-            margin-bottom: 6px;
-            background: transparent;
-            border: 0;
-            border-bottom: 1px solid var(--border-subtle);
+            width: 140px;
+            margin: 0;
+            background: var(--bg-input);
+            border: 1px solid var(--border-card);
+            border-radius: 8px;
             color: var(--text-primary);
             font: 13px var(--font-mono);
-            padding: 6px 0;
+            padding: 5px 12px;
             outline: none;
+            transition: border-color var(--transition-fast);
         }
         .tld-search::placeholder { color: var(--text-muted); }
-        .tld-search:focus { border-bottom-color: var(--accent); }
+        .tld-search:focus { border-color: var(--border-active); }
         .tld-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
@@ -758,10 +814,10 @@
         .pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
 
         .pill.selected {
-            background: rgba(110,127,243,0.1);
+            background: rgba(224,164,88,0.1);
             border-color: var(--accent);
             color: var(--accent);
-            box-shadow: 0 0 14px rgba(110,127,243,0.2);
+            box-shadow: 0 0 14px rgba(224,164,88,0.2);
         }
 
         /* Chip checkboxes */
@@ -790,7 +846,7 @@
         .chip input[type="checkbox"] { display: none; }
 
         .chip:has(input:checked) {
-            background: rgba(110,127,243,0.1);
+            background: rgba(224,164,88,0.1);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -833,7 +889,7 @@
         }
         .input-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(110,127,243,0.12);
+            box-shadow: 0 0 0 3px rgba(224,164,88,0.12);
         }
         .input-field::placeholder { color: var(--text-muted); }
         .input-field:disabled {
@@ -862,7 +918,7 @@
         }
         .select-field:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(110,127,243,0.12);
+            box-shadow: 0 0 0 3px rgba(224,164,88,0.12);
         }
 
         .select-field option {
@@ -970,12 +1026,56 @@
         .wchip:not(.common) .dotc { background: var(--text-muted); }
         .wchip.added { border-style: dashed; border-color: var(--accent); }
         .wchip.off { opacity: 0.38; text-decoration: line-through; }
+        .wchip.wm-new {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
         .wchip .wmx {
             color: var(--error);
             font-weight: 700;
             padding: 0 2px;
         }
         .wchip .wmx:hover { color: var(--text-primary); }
+        .wchip .wclass {
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 0 3px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        .wchip:hover .wclass { opacity: 0.9; }
+        .wchip .wclass:hover { color: var(--accent); }
+
+        /* 词表右键菜单 */
+        .wm-context {
+            position: fixed;
+            z-index: 300;
+            min-width: 160px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 4px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+        }
+        .wm-context[hidden] { display: none; }
+        .wm-context button {
+            appearance: none;
+            background: none;
+            border: 0;
+            text-align: left;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font: 13px var(--font-sans);
+            color: var(--text-primary);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .wm-context button:hover { background: var(--bg-card-hover); }
+        .wm-context button.danger { color: var(--error); }
+        .wm-context button.danger:hover { background: rgba(244,112,103,0.08); }
 
         /* 词表按首字母分组的可折叠分区 */
         .word-chips .wgroup { width: 100%; }
@@ -1038,12 +1138,12 @@
         .btn-primary {
             background: var(--accent);
             color: #000;
-            box-shadow: 0 2px 16px rgba(110,127,243,0.35);
+            box-shadow: 0 2px 16px rgba(224,164,88,0.35);
             font-weight: 700;
         }
-        .btn-primary:hover { box-shadow: 0 4px 24px rgba(110,127,243,0.5); transform: translateY(-1px); }
+        .btn-primary:hover { box-shadow: 0 4px 24px rgba(224,164,88,0.5); transform: translateY(-1px); }
         .btn-primary:disabled {
-            background: rgba(110,127,243,0.2);
+            background: rgba(224,164,88,0.2);
             color: rgba(0,0,0,0.4);
             box-shadow: none;
             cursor: not-allowed;
@@ -1099,7 +1199,7 @@
         }
         .btn-sort:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
         .btn-sort.active {
-            background: rgba(110,127,243,0.1);
+            background: rgba(224,164,88,0.1);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -1368,7 +1468,7 @@
         .domain-tld-badge {
             display: inline-block;
             padding: 2px 8px;
-            background: rgba(110,127,243,0.1);
+            background: rgba(224,164,88,0.1);
             color: var(--accent);
             border-radius: 4px;
             font-size: 11px;
@@ -1470,7 +1570,7 @@
             cursor: not-allowed;
         }
         .page-btn.active {
-            background: rgba(110,127,243,0.12);
+            background: rgba(224,164,88,0.12);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -1739,7 +1839,7 @@
             font-size: 22px;
             font-weight: 700;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #ffffff 0%, #6e7ff3 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #e0a458 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -1772,14 +1872,14 @@
            无发光、无渐变、无网格背景;主操作用高对比按钮。
            ================================================================ */
         :root {
-            --accent-soft: rgba(110,127,243,0.13);
+            --accent-soft: rgba(224,164,88,0.13);
             --border-hover: rgba(255,255,255,0.16);
             --btn-primary-bg: #f4f4f5;
             --btn-primary-bg-hover: #d9d9de;
             --btn-primary-fg: #0b0b0d;
         }
         [data-theme="light"] {
-            --accent-soft: rgba(91,106,219,0.10);
+            --accent-soft: rgba(169,123,59,0.10);
             --border-hover: rgba(0,0,0,0.18);
             --btn-primary-bg: #18181b;
             --btn-primary-bg-hover: #3f3f46;
@@ -1936,11 +2036,10 @@
             color: var(--text-primary);
         }
         .stat-label {
-            font-size: 10.5px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            font-size: 11.5px;
+            letter-spacing: 0.04em;
             color: var(--text-muted);
-            margin-top: 4px;
+            margin-top: 5px;
         }
 
         /* 进度:细环 + 隐藏冗余线性条 */
@@ -1987,6 +2086,72 @@
 
         /* 历史侧栏 */
         .sidebar-header h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.01em; }
+
+        /* ================================================================
+           LAYOUT REFINEMENT — 排版精修:应用外壳式布局
+           ================================================================ */
+
+        /* 顶部:居中 Hero → 紧凑工具栏(左标题,右状态/主题) */
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 14px;
+        }
+        .hero h1 { font-size: 16px; margin: 0; }
+        .hero h1::after { width: 5px; height: 5px; margin-left: 6px; vertical-align: 5px; }
+        .hero-bottom-row { gap: 12px; }
+
+        /* 侧栏:降低阴影,与主列卡片同语言 */
+        .sidebar {
+            border-radius: 12px;
+            box-shadow: none;
+            top: 16px;
+            max-height: calc(100vh - 32px);
+        }
+        .sidebar-header { padding: 14px 16px 12px; }
+        .sidebar-body { padding: 8px 12px 12px; }
+
+        /* 表单节奏 */
+        .form-section { margin-bottom: 14px; }
+        .word-info { margin-top: 12px; }
+
+        /* 主操作:全宽 CTA */
+        .btn-actions { gap: 10px; margin-top: 18px; }
+        .btn-actions .btn-primary { flex: 1; padding: 11px 22px; }
+
+        /* 进度卡:统一五项同级统计,细线条进度条承担扫描动态 */
+        .progress-section.visible { display: flex; flex-direction: column; }
+        .progress-top { margin-bottom: 14px; }
+        .progress-ring-wrap { display: none !important; }
+        .stats-grid { grid-template-columns: repeat(5, 1fr); gap: 0; min-width: 240px; }
+        .stat-card { text-align: left; padding: 2px 22px; }
+        .stat-card:first-child { padding-left: 0; }
+        .progress-bar-bg {
+            display: block;
+            order: 2;
+            height: 3px;
+            margin: 0 0 12px;
+            background: var(--border-subtle);
+        }
+        .progress-bar-fill { background: var(--accent); }
+        .speed-bar {
+            order: 3;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 12px;
+            margin-top: 0;
+        }
+
+        /* 结果区:标题行与内容之间加发丝分隔 */
+        .results-toolbar {
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 12px;
+        }
+        .empty-state { padding: 36px 20px; }
     </style>
 </head>
 <body>
@@ -2000,6 +2165,9 @@
             <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">确认</button>
         </div>
     </div>
+
+    <!-- Word chip context menu -->
+    <div class="wm-context" id="wm-context" hidden></div>
 
     <!-- Toast Container -->
     <div class="toast-container" id="toast-container"></div>
@@ -2052,6 +2220,7 @@
                         <span class="conn-dot" id="conn-dot"></span>
                         <span id="conn-text">就绪</span>
                     </div>
+                    <div class="accent-picker" id="accent-picker" title="主题配色"></div>
                     <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
                         <span id="theme-icon"></span>
                     </button>
@@ -2285,7 +2454,7 @@
                 <div class="inline-row">
                     <div class="form-group" style="flex:0 0 72px;">
                         <span class="form-label">前缀</span>
-                        <input type="text" id="prefix" value="x" maxlength="4" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
+                        <input type="text" id="prefix" value="x" maxlength="4" class="input-field" style="text-align:center;font-size:15px;font-weight:600;">
                     </div>
                     <div class="form-group" style="flex:0 0 140px;">
                         <span class="form-label">单词长度</span>
@@ -2298,7 +2467,7 @@
                     </div>
                     <div class="form-group" style="flex:0 0 72px;">
                         <span class="form-label">后缀</span>
-                        <input type="text" id="suffix" value="" maxlength="4" placeholder="无" class="input-field" style="text-align:center;font-size:18px;font-weight:700;">
+                        <input type="text" id="suffix" value="" maxlength="4" placeholder="无" class="input-field" style="text-align:center;font-size:15px;font-weight:600;">
                     </div>
                     <div class="form-group" style="flex:0 0 auto;">
                         <span class="form-label">筛选</span>
@@ -2346,14 +2515,15 @@
                                 stroke-dasharray="326.73"
                                 stroke-dashoffset="326.73"/>
                     </svg>
-                    <div class="progress-ring-text">
-                        <span class="pct" id="progress-pct-large">0%</span>
-                        <span class="sub">完成</span>
-                    </div>
+                    <div class="progress-ring-text"></div>
                 </div>
 
                 <!-- Stats -->
                 <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="progress-pct-large">0%</div>
+                        <div class="stat-label">完成度</div>
+                    </div>
                     <div class="stat-card">
                         <div class="stat-value" id="stat-checked">0</div>
                         <div class="stat-label">已检测</div>
@@ -2581,15 +2751,22 @@
             });
         }
 
-        // 快捷行:收藏在前,最近使用补后(去重)
-        function renderTldQuick() {
-            const wrap = $("tld-quick");
+        // 快捷行:当前选中永远钉在第一位,其后是收藏与最近使用(去重)
+        function buildQuickList() {
             const current = $("tld").value;
-            const quick = [...tldStars];
+            const quick = current ? [current] : [];
+            for (const t of tldStars) if (!quick.includes(t)) quick.push(t);
             for (const t of tldRecents) {
                 if (quick.length >= 10) break;
                 if (!quick.includes(t)) quick.push(t);
             }
+            return quick;
+        }
+
+        function renderTldQuick() {
+            const wrap = $("tld-quick");
+            const current = $("tld").value;
+            const quick = buildQuickList();
             wrap.innerHTML = "";
             if (quick.length === 0) {
                 const hint = document.createElement("span");
@@ -2603,7 +2780,10 @@
                 b.type = "button";
                 b.className = "pill" + (t === current ? " selected" : "");
                 b.dataset.tld = t;
-                b.innerHTML = (isStarred(t) ? '<span class="qstar">★</span>' : "") + "." + t;
+                b.innerHTML = "." + t
+                    + (quick.length > 1
+                        ? '<span class="qremove" title="从快捷栏移除">×</span>'
+                        : "");
                 wrap.appendChild(b);
             }
         }
@@ -2633,6 +2813,7 @@
             });
             $("tld").value = tld;
             syncTldCurrent(tld);
+            try { localStorage.setItem("dc-tld", tld); } catch (err) {}
             pushRecentTld(tld);
             renderTldQuick();
         }
@@ -2694,15 +2875,96 @@
         });
 
         document.getElementById("tld-quick").addEventListener("click", (e) => {
+            const rm = e.target.closest(".qremove");
+            if (rm) {
+                const tld = rm.parentElement.dataset.tld;
+                const wasCurrent = tld === $("tld").value;
+                // 同时清除两个来源,避免「取消收藏后以最近使用身份复活」
+                if (isStarred(tld)) tldStars = tldStars.filter(t => t !== tld);
+                tldRecents = tldRecents.filter(t => t !== tld);
+                persistTldMeta();
+                // 删的是当前选中的:自动切到快捷栏里剩下的第一个
+                if (wasCurrent) {
+                    const next = buildQuickList().find(t => t !== tld);
+                    if (next) {
+                        $("tld").value = next;
+                        syncTldCurrent(next);
+                        try { localStorage.setItem("dc-tld", next); } catch (err) {}
+                    }
+                }
+                renderTldQuick();
+                injectPillStars();
+                return;
+            }
             const pill = e.target.closest(".pill");
             if (!pill) return;
             selectTld(pill.dataset.tld);
         });
 
+        // 恢复上次选中的后缀(否则每次刷新都被默认 option 重置回 .de)
+        try {
+            const savedTld = localStorage.getItem("dc-tld");
+            if (savedTld && document.querySelector('#tld option[value="' + savedTld + '"]')) {
+                $("tld").value = savedTld;
+            }
+        } catch (err) {}
+
         renderTldPicker();
         setTldFull(false);
         renderTldQuick();
         syncTldCurrent($("tld").value || "de");
+
+        // ================================================================
+        // ACCENT PICKER — 可切换的全站强调色
+        // ================================================================
+        // 每套配色在深/浅主题下各有一版调校值;不选时 CSS 默认琥珀金
+        const ACCENTS = {
+            amber:   { name: "琥珀金", dark: "#e0a458", drgb: "224,164,88",   light: "#a97b3b", lrgb: "169,123,59" },
+            emerald: { name: "翡翠绿", dark: "#34d399", drgb: "52,211,153",  light: "#0b9e6b", lrgb: "11,158,107" },
+            indigo:  { name: "靛蓝",   dark: "#6e7ff3", drgb: "110,127,243", light: "#5b6adb", lrgb: "91,106,219" },
+            rose:    { name: "玫瑰粉", dark: "#e879b9", drgb: "232,121,185", light: "#c2417c", lrgb: "194,65,124" },
+            mono:    { name: "月白",   dark: "#e8e8ec", drgb: "232,232,236", light: "#18181b", lrgb: "24,24,27" },
+        };
+        let currentAccent = localStorage.getItem("dc-accent") || "amber";
+        if (!ACCENTS[currentAccent]) currentAccent = "amber";
+
+        function applyAccent() {
+            const a = ACCENTS[currentAccent];
+            const dark = document.documentElement.dataset.theme !== "light";
+            const hex = dark ? a.dark : a.light;
+            const rgb = dark ? a.drgb : a.lrgb;
+            const s = document.documentElement.style;
+            s.setProperty("--accent", hex);
+            s.setProperty("--accent2", hex);
+            s.setProperty("--accent-glow", `rgba(${rgb},0.14)`);
+            s.setProperty("--accent2-glow", `rgba(${rgb},0.12)`);
+            s.setProperty("--accent-soft", `rgba(${rgb},0.13)`);
+            s.setProperty("--border-active", `rgba(${rgb},${dark ? "0.55" : "0.5"})`);
+            document.querySelectorAll(".accent-dot").forEach(d => {
+                d.classList.toggle("active", d.dataset.accent === currentAccent);
+                d.style.background = dark ? ACCENTS[d.dataset.accent].dark : ACCENTS[d.dataset.accent].light;
+            });
+        }
+
+        function initAccentPicker() {
+            const wrap = $("accent-picker");
+            for (const [key, a] of Object.entries(ACCENTS)) {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "accent-dot";
+                b.dataset.accent = key;
+                b.title = a.name;
+                wrap.appendChild(b);
+            }
+            wrap.addEventListener("click", (e) => {
+                const d = e.target.closest(".accent-dot");
+                if (!d) return;
+                currentAccent = d.dataset.accent;
+                try { localStorage.setItem("dc-accent", currentAccent); } catch (err) {}
+                applyAccent();
+            });
+            applyAccent();
+        }
 
         // ================================================================
         // INIT
@@ -2786,6 +3048,7 @@
 
         function initApp() {
             initTheme();
+            initAccentPicker();
             restoreLastResults();
             restoreLastResultsFromServer();
             checkActiveScan();
@@ -2911,7 +3174,7 @@
             }
         }
 
-        async function wmPost(body) {
+        async function wmPost(body, highlightW) {
             const len = $("wm-length").value;
             try {
                 const resp = await authFetch(`/words/${len}/manage`, {
@@ -2921,7 +3184,24 @@
                 });
                 wmMeta = await resp.json();
                 wmItems = wmMeta.items || [];
+                if (highlightW) {
+                    // 新词要让用户立刻看见:展开所在字母组再渲染定位
+                    wmCollapsed.delete(highlightW[0].toUpperCase());
+                    if (wmFilter === "disabled" || wmFilter === "uncommon") {
+                        wmFilter = "all";
+                        document.querySelectorAll("#wm-filters .btn-sort")
+                            .forEach(b => b.classList.toggle("active", b.dataset.wf === "all"));
+                    }
+                }
                 wmRender();
+                if (highlightW) {
+                    const chip = $("wm-chips").querySelector('.wchip[data-w="' + highlightW + '"]');
+                    if (chip) {
+                        chip.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                        chip.classList.add("wm-new");
+                        setTimeout(() => chip.classList.remove("wm-new"), 1800);
+                    }
+                }
                 refreshWordMeta(); // 同步表单里的「将扫描 N 个域名」
             } catch (e) {
                 showToast("error", "保存失败: " + e.message);
@@ -2939,9 +3219,12 @@
                 + (it.added ? " added" : "")
                 + (it.disabled ? " off" : "");
             b.dataset.w = it.w;
-            b.title = it.disabled ? "点击启用" : "点击停用";
+            b.title = (it.disabled ? "点击启用" : "点击停用") + " · 右键更多操作";
             b.innerHTML = '<span class="dotc"></span>' + it.w
-                + (it.added ? ' <span class="wmx" title="删除自定义词">×</span>' : "");
+                + (it.added
+                    ? ' <span class="wmx" title="删除自定义词">×</span>'
+                    : ` <span class="wclass" data-act="${it.common ? 'demote' : 'promote'}"` +
+                      ` title="${it.common ? '设为非常用' : '设为常用'}">${it.common ? '☆' : '★'}</span>`);
             return b;
         }
 
@@ -3044,6 +3327,14 @@
                 updateWmExpandAll();
                 return;
             }
+            if (e.target.classList.contains("wclass")) {
+                const chip2 = e.target.closest(".wchip");
+                const w = chip2.dataset.w;
+                const act = e.target.dataset.act; // promote | demote
+                wmPost({ [act]: [w] });
+                showToast("info", act === "promote" ? `“${w}”已设为常用` : `“${w}”已设为非常用`);
+                return;
+            }
             const chip = e.target.closest(".wchip");
             if (!chip) return;
             const w = chip.dataset.w;
@@ -3081,7 +3372,17 @@
             const w = (input.value || "").trim().toLowerCase();
             if (!/^[a-z]+$/.test(w)) { showToast("warning", "只能包含字母 a-z"); return; }
             if (w.length !== len) { showToast("warning", `需要正好 ${len} 个字母`); return; }
-            wmPost({ add: [w] });
+            if (wmItems.some(i => i.w === w)) {
+                showToast("info", `"${w}" 已在词表中（预设词），无需添加`);
+                input.value = "";
+                return;
+            }
+            // 清空搜索过滤,否则新词可能一添加就被滤掉而"消失"
+            if ($("wm-search").value.trim()) {
+                $("wm-search").value = "";
+                $("wm-search").dispatchEvent(new Event("input"));
+            }
+            wmPost({ add: [w] }, w);
             input.value = "";
         }
 
@@ -3100,6 +3401,75 @@
         $("word-modal").addEventListener("click", (e) => {
             if (e.target === $("word-modal")) closeWordModal();
         });
+
+        // ── 词表右键菜单:按词的状态显示可用操作 ──
+        let wmCtxW = null;
+
+        function closeWmContext() {
+            $("wm-context").hidden = true;
+            wmCtxW = null;
+        }
+
+        function openWmContext(chip, x, y) {
+            const w = chip.dataset.w;
+            const item = wmItems.find(i => i.w === w);
+            if (!item) return;
+            wmCtxW = w;
+            const menu = $("wm-context");
+            const actions = [];
+            if (item.added) {
+                actions.push({ act: "remove_added", label: "删除自定义词", danger: true });
+            } else {
+                actions.push(item.common
+                    ? { act: "demote", label: "☆ 设为非常用" }
+                    : { act: "promote", label: "★ 设为常用" });
+                actions.push(item.disabled
+                    ? { act: "enable", label: "启用扫描" }
+                    : { act: "disable", label: "停用扫描" });
+            }
+            menu.innerHTML = "";
+            for (const a of actions) {
+                const b = document.createElement("button");
+                b.textContent = a.label;
+                b.dataset.act = a.act;
+                if (a.danger) b.classList.add("danger");
+                menu.appendChild(b);
+            }
+            menu.hidden = false;
+            const rect = menu.getBoundingClientRect();
+            menu.style.left = Math.min(x, window.innerWidth - rect.width - 8) + "px";
+            menu.style.top = Math.min(y, window.innerHeight - rect.height - 8) + "px";
+        }
+
+        $("wm-chips").addEventListener("contextmenu", (e) => {
+            const chip = e.target.closest(".wchip");
+            if (!chip) return;
+            e.preventDefault();
+            openWmContext(chip, e.clientX, e.clientY);
+        });
+
+        $("wm-context").addEventListener("click", (e) => {
+            const b = e.target.closest("button[data-act]");
+            if (!b || !wmCtxW) return;
+            const w = wmCtxW;
+            const act = b.dataset.act;
+            closeWmContext();
+            if (act === "promote" || act === "demote") {
+                wmPost({ [act]: [w] });
+                showToast("info", act === "promote" ? `“${w}”已设为常用` : `“${w}”已设为非常用`);
+            } else if (act === "disable" || act === "enable" || act === "remove_added") {
+                wmPost({ [act]: [w] });
+            }
+        });
+
+        // 点击其他位置 / Esc / 滚动词表 → 关闭菜单
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest("#wm-context")) closeWmContext();
+        }, true);
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") closeWmContext();
+        });
+        $("wm-chips").addEventListener("scroll", closeWmContext, true);
 
         // ================================================================
         // RESTORE FROM LOCALSTORAGE
@@ -4065,6 +4435,7 @@
             html.dataset.theme = next;
             localStorage.setItem('dc-theme', next);
             updateThemeIcon(next);
+            applyAccent();
         }
 
         function updateThemeIcon(theme) {

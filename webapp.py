@@ -15,7 +15,7 @@ from pathlib import Path
 import aiohttp
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from starlette.responses import StreamingResponse
+from starlette.responses import FileResponse, StreamingResponse
 
 from checkers import check_domain
 from config import Config
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Domain Checker", lifespan=lifespan)
 
 # 公开路由（无需 token）
-_PUBLIC_PATHS = {"/", "/auth/check", "/verify"}
+_PUBLIC_PATHS = {"/", "/auth/check", "/verify", "/favicon.ico", "/favicon.svg", "/apple-touch-icon.png"}
 
 
 @app.middleware("http")
@@ -119,6 +119,23 @@ def _save_last_scan(tld: str, domains: list[str], timestamp: float):
         LAST_SCAN_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     except Exception:
         pass
+
+
+# ── 站点图标 ──────────────────────────────────────────────
+
+@app.get("/favicon.ico")
+async def favicon_ico():
+    return FileResponse("static/favicon.ico", media_type="image/x-icon")
+
+
+@app.get("/favicon.svg")
+async def favicon_svg():
+    return FileResponse("static/favicon.svg", media_type="image/svg+xml")
+
+
+@app.get("/apple-touch-icon.png")
+async def favicon_apple():
+    return FileResponse("static/apple-touch-icon.png", media_type="image/png")
 
 
 # ── 首页 ──────────────────────────────────────────────────
@@ -186,13 +203,21 @@ def _load_word_config():
         config[str(key)] = {
             "disabled": {str(w) for w in val.get("disabled", [])},
             "added": [str(w) for w in val.get("added", [])],
+            # 用户对预设词的常用/非常用重归类(双向,点两次还原)
+            "promoted": {str(w) for w in val.get("promoted", [])},
+            "demoted": {str(w) for w in val.get("demoted", [])},
         }
     WORD_CONFIG = config
 
 
 def _save_word_config():
     data = {
-        k: {"disabled": sorted(v["disabled"]), "added": v["added"]}
+        k: {
+            "disabled": sorted(v["disabled"]),
+            "added": v["added"],
+            "promoted": sorted(v.get("promoted", set())),
+            "demoted": sorted(v.get("demoted", set())),
+        }
         for k, v in WORD_CONFIG.items()
     }
     tmp = WORD_CONFIG_FILE.with_suffix(".json.tmp")
@@ -218,14 +243,16 @@ def _apply_word_overlay(length: int, only_common: bool, only_custom: bool = Fals
     wl = WORD_CACHE[length]
     words = wl.get("words", [])
     common_set = set(words[: wl.get("common_count", 0)])
-    wcfg = WORD_CONFIG.get(str(length)) or {"disabled": set(), "added": []}
+    wcfg = WORD_CONFIG.get(str(length)) or {"disabled": set(), "added": [], "promoted": set(), "demoted": set()}
 
     if only_custom:
         return list(wcfg["added"])
 
     base = [w for w in words if w not in wcfg["disabled"]]
     if only_common:
-        base = [w for w in base if w in common_set]
+        # 有效常用集 = 预设常用 - 用户降级 + 用户提拔
+        effective = (common_set - wcfg.get("demoted", set())) | wcfg.get("promoted", set())
+        base = [w for w in base if w in effective]
     added = [w for w in wcfg["added"] if w not in set(base)]
     return base + added
 
@@ -492,9 +519,12 @@ def _words_manage_payload(length: int) -> dict:
     wl = WORD_CACHE[length]
     words = wl.get("words", [])
     common_set = set(words[: wl.get("common_count", 0)])
-    wcfg = WORD_CONFIG.get(str(length)) or {"disabled": set(), "added": []}
+    wcfg = WORD_CONFIG.get(str(length)) or {"disabled": set(), "added": [], "promoted": set(), "demoted": set()}
+    effective_common = (
+        (common_set - wcfg.get("demoted", set())) | wcfg.get("promoted", set())
+    )
     items = [
-        {"w": w, "common": w in common_set, "disabled": w in wcfg["disabled"], "added": False}
+        {"w": w, "common": w in effective_common, "disabled": w in wcfg["disabled"], "added": False}
         for w in words
     ]
     items += [
@@ -534,7 +564,9 @@ async def words_manage_update(length: int, data: dict):
     if data.get("reset"):
         WORD_CONFIG.pop(str(length), None)
     else:
-        wcfg = WORD_CONFIG.setdefault(str(length), {"disabled": set(), "added": []})
+        wcfg = WORD_CONFIG.setdefault(
+            str(length), {"disabled": set(), "added": [], "promoted": set(), "demoted": set()}
+        )
         base_set = _base_word_set(length)
 
         for w in data.get("disable") or []:
@@ -543,6 +575,21 @@ async def words_manage_update(length: int, data: dict):
                 wcfg["disabled"].add(w)
         for w in data.get("enable") or []:
             wcfg["disabled"].discard(str(w).strip().lower())
+        # 常用↔非常用重归类:已在 promoted/demoted 中则撤销,否则记录
+        for w in data.get("promote") or []:
+            w = str(w).strip().lower()
+            if _WORD_RE.match(w) and w in base_set:
+                if w in wcfg.get("demoted", set()):
+                    wcfg["demoted"].discard(w)   # 原本被降级 → 撤销,回到预设常用
+                else:
+                    wcfg.setdefault("promoted", set()).add(w)
+        for w in data.get("demote") or []:
+            w = str(w).strip().lower()
+            if _WORD_RE.match(w) and w in base_set:
+                if w in wcfg.get("promoted", set()):
+                    wcfg["promoted"].discard(w)  # 原本被提拔 → 撤销,回到预设非常用
+                else:
+                    wcfg.setdefault("demoted", set()).add(w)
         for w in data.get("add") or []:
             w = str(w).strip().lower()
             # 自定义词:必须是指定长度的纯字母,且不能与预设重复
